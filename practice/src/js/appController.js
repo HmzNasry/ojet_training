@@ -34,11 +34,11 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojknocko
       this.mdScreen = ResponsiveKnockoutUtils.createMediaQueryObservable(mdQuery);
 
       let navData = [
-        { path: '', redirect: 'dashboard' },
-        { path: 'dashboard', detail: { label: 'Dashboard', iconClass: 'oj-ux-ico-bar-chart' } },
-        { path: 'surahscheme', detail: { label: 'Surah Scheme', iconClass: 'oj-ux-ico-fire' } },
-        { path: 'ayahscheme', detail: { label: 'Ayah Scheme', iconClass: 'oj-ux-ico-contact-group' } },
-        { path: 'statscheme', detail: { label: 'Stats Scheme', iconClass: 'oj-ux-ico-information-s' } }
+        { path: '', redirect: 'home' },
+        { path: 'home', detail: { label: 'Home', iconClass: 'oj-ux-ico-home' } },
+        { path: 'surahscheme', detail: { label: 'Surah Scheme', iconClass: ' oj-ux-ico-book' } },
+        { path: 'ayahscheme', detail: { label: 'Ayah Scheme', iconClass: 'oj-ux-ico-add-detail-page' } },
+        { path: 'statscheme', detail: { label: 'Stats Scheme', iconClass: 'oj-ux-ico-analytics' } }
       ];
 
       // Router setup
