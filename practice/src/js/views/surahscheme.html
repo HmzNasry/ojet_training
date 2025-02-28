@@ -1,29 +1,34 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Surah</h2>
 
+<div class="oj-flex">
     <!-- Left Sidebar: Tree View -->
     <div class="oj-sm-3">
-      <oj-tree-view
-          id="treeview"
-          data="[[treeDataProvider]]"
-          selection-mode="multiple"
-          aria-label="Tree View with JSON Data">
-          <template slot="itemTemplate" data-oj-as="row">
-              <span class="oj-treeview-item-icon"></span>
-              <span class="oj-treeview-item-text">
-                  <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
-              </span>
-          </template>
-      </oj-tree-view>
-  </div>
-  
-<oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
-          data="[[surahDataProvider]]"
-          columns='[
-            {"headerText": "Surah ID", "field": "surahId"},
-            {"headerText": "Scheme ID", "field": "schemeId"},
-            {"headerText": "Scheme Name", "field": "schemeName"},
-            {"headerText": "Min Count", "field": "minCount"},
-            {"headerText": "Max Count", "field": "maxCount"}
-          ]'
-          display="grid">
-</oj-table>
+        <oj-tree-view
+            id="treeview"
+            data="[[treeDataProvider]]"
+            selection-mode="multiple"
+            aria-label="Tree View with JSON Data">
+            <template slot="itemTemplate" data-oj-as="row">
+                <span class="oj-treeview-item-icon"></span>
+                <span class="oj-treeview-item-text">
+                    <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+                </span>
+            </template>
+        </oj-tree-view>
+    </div>
+
+    <!-- Right Side: Table -->
+    <div class="oj-sm-9">
+        <oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
+                  data="[[surahDataProvider]]"
+                  columns='[
+                    {"headerText": "Surah ID", "field": "surahId"},
+                    {"headerText": "Scheme ID", "field": "schemeId"},
+                    {"headerText": "Scheme Name", "field": "schemeName"},
+                    {"headerText": "Min Count", "field": "minCount"},
+                    {"headerText": "Max Count", "field": "maxCount"}
+                  ]'
+                  display="grid">
+        </oj-table>
+    </div>
+</div>
