@@ -1,65 +1,43 @@
 define([
-    'knockout', 
-    'ojs/ojbootstrap', 
-    'ojs/ojarraydataprovider', 
-    'ojs/ojarraytreedataprovider', 
-    'ojs/ojknockout', 
-    'ojs/ojtreeview', 
+    'knockout',
+    'ojs/ojbootstrap',
+    'ojs/ojarraydataprovider',
+    'ojs/ojarraytreedataprovider',
+    'ojs/ojknockout',
+    'ojs/ojtreeview',
     'ojs/ojtable'
 ], function (ko, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider) {
-    
-    function SchemesSurahViewModel() {
+
+    function StatsSchemesViewModel() {
         let self = this;
 
-        // Table Data (Fetching from API)
-        self.surahArray = ko.observableArray([]);
-        self.schemesDataProvider = new ArrayDataProvider(self.surahArray, { keyAttributes: 'id' });
+        self.schemeArray = ko.observableArray([]);
+        self.schemesDataProvider = ko.observable();
+        self.isLoading = ko.observable(true);
 
-        fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
+        fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
-                let normalizedData = [];
-                Object.keys(data).forEach(surahId => {
-                    data[surahId].forEach(scheme => {
-                        normalizedData.push({
-                            id: `${surahId}-${scheme.schemeId}`,
-                            surahId: surahId,
-                            schemeId: scheme.schemeId,
-                            schemeName: scheme.schemeName,
-                            minCount: scheme.minCount,
-                            maxCount: scheme.maxCount
-                        });
-                    });
-                });
-                self.surahArray(normalizedData);
+                self.schemeArray(data);
+                self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: 'schemeId' }));
+                self.isLoading(false);
             })
-            .catch(error => console.error("Error fetching surah data:", error));
+            .catch(error => {
+                console.error("Error fetching scheme data:", error);
+                self.isLoading(false);
+            });
 
-        // Dummy Tree Data for UI Testing
-        let dummyTreeData = [
-            {
-                id: "1",
-                title: "Category 1",
-                children: [
-                    { id: "1-1", title: "Subcategory 1.1" },
-                    { id: "1-2", title: "Subcategory 1.2" }
-                ]
-            },
-            {
-                id: "2",
-                title: "Category 2",
-                children: [
-                    { id: "2-1", title: "Subcategory 2.1" },
-                    { id: "2-2", title: "Subcategory 2.2" }
-                ]
-            }
+        // Unique Tree View Data
+        let dummyTreeDataStats = [
+            { id: "ST1", title: "Stats Category 1", children: [{ id: "ST1-1", title: "Stats Subcategory 1.1" }] },
+            { id: "ST2", title: "Stats Category 2", children: [{ id: "ST2-1", title: "Stats Subcategory 2.1" }] }
         ];
 
-        self.treeDataProvider = new ArrayTreeDataProvider(dummyTreeData, {
+        self.treeDataProvider = new ArrayTreeDataProvider(dummyTreeDataStats, {
             keyAttributes: 'id',
             childrenAttribute: 'children'
         });
     }
 
-    return SchemesSurahViewModel;
+    return StatsSchemesViewModel;
 });

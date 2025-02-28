@@ -11,9 +11,9 @@ define([
   function SchemesSurahViewModel() {
       let self = this;
 
-      // Table Data (Fetching from API)
       self.surahArray = ko.observableArray([]);
-      self.surahDataProvider = new ArrayDataProvider(self.surahArray, { keyAttributes: 'id' });
+      self.schemesDataProvider = ko.observable();
+      self.isLoading = ko.observable(true); // Loading state
 
       fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
           .then(response => response.json())
@@ -31,11 +31,18 @@ define([
                       });
                   });
               });
-              self.surahArray(normalizedData);
-          })
-          .catch(error => console.error("Error fetching surah data:", error));
 
-      // Unique Dummy Tree Data for UI Testing
+              self.surahArray(normalizedData);
+              self.schemesDataProvider(new ArrayDataProvider(self.surahArray, { keyAttributes: 'id' }));
+
+              self.isLoading(false); // Stop loading
+          })
+          .catch(error => {
+              console.error("Error fetching surah data:", error);
+              self.isLoading(false); // Ensure it stops loading even if an error occurs
+          });
+
+      // Unique Tree Data for this module
       let dummyTreeDataSurahUnique = [
           {
               id: "U1",

@@ -1,8 +1,10 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Surah</h2>
 
-<div class="oj-flex">
-    <!-- Left Sidebar: Tree View -->
-    <div class="oj-sm-3">
+<div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
+
+    <!-- Tree View -->
+    <div class="oj-flex-item oj-sm-12" 
+         style="width: 100%; max-width: 100%; overflow: hidden; padding-bottom: 15px;">
         <oj-tree-view
             id="treeview"
             data="[[treeDataProvider]]"
@@ -17,10 +19,11 @@
         </oj-tree-view>
     </div>
 
-    <!-- Right Side: Table -->
-    <div class="oj-sm-9">
-        <oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
-                  data="[[surahDataProvider]]"
+    <!-- Table -->
+    <div class="oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;">
+        <oj-table class="oj-sm-overflow-x-auto"
+                  style="max-height: none; width: 100%; min-width: 1200px;" 
+                  data="[[schemesDataProvider]]"
                   columns='[
                     {"headerText": "Surah ID", "field": "surahId"},
                     {"headerText": "Scheme ID", "field": "schemeId"},
@@ -29,6 +32,9 @@
                     {"headerText": "Max Count", "field": "maxCount"}
                   ]'
                   display="grid">
+            <template slot="noData">
+                <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
+            </template>
         </oj-table>
     </div>
 </div>

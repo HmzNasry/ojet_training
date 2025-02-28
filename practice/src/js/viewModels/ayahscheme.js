@@ -1,15 +1,19 @@
 define([
-  'knockout', 
-  'ojs/ojbootstrap', 
-  'ojs/ojarraydataprovider', 
-  'ojs/ojarraytreedataprovider', 
+  'knockout',
+  'ojs/ojbootstrap',
+  'ojs/ojarraydataprovider',
+  'ojs/ojarraytreedataprovider',
+  'ojs/ojknockout',
+  'ojs/ojtreeview',
   'ojs/ojtable'
 ], function (ko, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider) {
-  
-  function SchemesAyahViewModel() {
+
+  function AyahSchemesViewModel() {
       let self = this;
+
       self.ayahArray = ko.observableArray([]);
-      self.ayahDataProvider = new ArrayDataProvider(self.ayahArray, { keyAttributes: 'seqNo' });
+      self.ayahDataProvider = ko.observable();
+      self.isLoading = ko.observable(true);
 
       fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
           .then(response => response.json())
@@ -25,27 +29,18 @@ define([
                   schemesThatHaveKhulf: (entry.schemesThatHaveKhulf || []).join(", ")
               }));
               self.ayahArray(formattedData);
+              self.ayahDataProvider(new ArrayDataProvider(self.ayahArray, { keyAttributes: 'seqNo' }));
+              self.isLoading(false);
           })
-          .catch(error => console.error("Error fetching ayah data:", error));
+          .catch(error => {
+              console.error("Error fetching ayah data:", error);
+              self.isLoading(false);
+          });
 
-      // Dummy Tree Data for UI Testing (Unique for this file)
+      // Unique Tree View Data
       let dummyTreeDataAyah = [
-          {
-              id: "A1",
-              title: "Ayah Category 1",
-              children: [
-                  { id: "A1-1", title: "Ayah Subcategory 1.1" },
-                  { id: "A1-2", title: "Ayah Subcategory 1.2" }
-              ]
-          },
-          {
-              id: "A2",
-              title: "Ayah Category 2",
-              children: [
-                  { id: "A2-1", title: "Ayah Subcategory 2.1" },
-                  { id: "A2-2", title: "Ayah Subcategory 2.2" }
-              ]
-          }
+          { id: "AY1", title: "Ayah Category 1", children: [{ id: "AY1-1", title: "Ayah Subcategory 1.1" }] },
+          { id: "AY2", title: "Ayah Category 2", children: [{ id: "AY2-1", title: "Ayah Subcategory 2.1" }] }
       ];
 
       self.treeDataProvider = new ArrayTreeDataProvider(dummyTreeDataAyah, {
@@ -54,5 +49,5 @@ define([
       });
   }
 
-  return SchemesAyahViewModel;
+  return AyahSchemesViewModel;
 });
