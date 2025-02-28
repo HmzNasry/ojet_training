@@ -1,0 +1,1 @@
+{"name":"practice","version":"1.0.0","description":"An Oracle JavaScript Extension Toolkit(JET) web app","dependencies":{"@oracle/oraclejet":"~10.0.0"},"devDependencies":{"@oracle/oraclejet-tooling":"~10.0.0"},"engines":{"node":">=10.13.0"},"private":true}

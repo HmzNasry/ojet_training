@@ -1,0 +1,31 @@
+<h2 class="oj-helper-text-align-center">Counting Scheme Stats</h2>
+<div id="sampleDemo" class="demo-padding demo-container">
+  <div id="componentDemoContent" style="width: 1px; min-width: 100%;">
+            
+    <oj-tree-view
+      id="treeview"
+      data="[[data]]"
+      selection-mode="multiple"
+      aria-label="Tree View with JSON Data">
+      <template slot="itemTemplate" data-oj-as="row">
+        <span class="oj-treeview-item-icon"></span>
+        <span class="oj-treeview-item-text">
+          <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+        </span>
+      </template>
+    </oj-tree-view>
+    
+    
+    
+  </div>
+</div>
+<oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
+          data="[[schemesDataProvider]]"
+          columns='[
+            {"headerText": "Scheme ID", "field": "schemeId"},
+            {"headerText": "Scheme Name", "field": "schemeName"},
+            {"headerText": "Min Ayahs", "field": "minCount"},
+            {"headerText": "Max Ayahs", "field": "maxCount"}
+          ]'
+          display="grid">
+</oj-table>

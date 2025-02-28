@@ -1,0 +1,14 @@
+<h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Ayah</h2>
+<oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
+          data="[[ayahDataProvider]]"
+          columns='[
+            {"headerText": "Surah No", "field": "surahNo"},
+            {"headerText": "Ayah No", "field": "ayahNoWithinSurah"},
+            {"headerText": "Word", "field": "word"},
+            {"headerText": "Ayah Text", "field": "ayahText"},
+            {"headerText": "Schemes That Count", "field": "schemesThatCount"},
+            {"headerText": "Schemes That Do Not Count", "field": "schemesThatDoNotCount"},
+            {"headerText": "Schemes That Have Khulf", "field": "schemesThatHaveKhulf"}
+          ]'
+          display="grid">
+</oj-table>
