@@ -3,16 +3,15 @@ define([
     'ojs/ojbootstrap', 
     'ojs/ojarraydataprovider', 
     'ojs/ojarraytreedataprovider', 
-    'text!../cookbook/dataCollections/treeView/json/treeViewData.json',
     'ojs/ojknockout', 
     'ojs/ojtreeview', 
     'ojs/ojtable'
-], function (ko, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, treeViewJson) {
+], function (ko, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider) {
     
     function SchemesSurahViewModel() {
         let self = this;
 
-        // 1️⃣ Table Data (Fetching from API)
+        // Table Data (Fetching from API)
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = new ArrayDataProvider(self.surahArray, { keyAttributes: 'id' });
 
@@ -36,9 +35,29 @@ define([
             })
             .catch(error => console.error("Error fetching surah data:", error));
 
+        // Dummy Tree Data for UI Testing
+        let dummyTreeData = [
+            {
+                id: "1",
+                title: "Category 1",
+                children: [
+                    { id: "1-1", title: "Subcategory 1.1" },
+                    { id: "1-2", title: "Subcategory 1.2" }
+                ]
+            },
+            {
+                id: "2",
+                title: "Category 2",
+                children: [
+                    { id: "2-1", title: "Subcategory 2.1" },
+                    { id: "2-2", title: "Subcategory 2.2" }
+                ]
+            }
+        ];
 
-        self.treeDataProvider = new ArrayTreeDataProvider(JSON.parse(treeViewJson), {
-            keyAttributes: 'id'
+        self.treeDataProvider = new ArrayTreeDataProvider(dummyTreeData, {
+            keyAttributes: 'id',
+            childrenAttribute: 'children'
         });
     }
 

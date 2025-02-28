@@ -1,4 +1,21 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Ayah</h2>
+
+    <!-- Left Sidebar: Tree View -->
+    <div class="oj-sm-3">
+      <oj-tree-view
+          id="treeview"
+          data="[[treeDataProvider]]"
+          selection-mode="multiple"
+          aria-label="Tree View with JSON Data">
+          <template slot="itemTemplate" data-oj-as="row">
+              <span class="oj-treeview-item-icon"></span>
+              <span class="oj-treeview-item-text">
+                  <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+              </span>
+          </template>
+      </oj-tree-view>
+  </div>
+  
 <oj-table class="oj-sm-overflow-auto" style="max-height: 400px; display: block;"
           data="[[ayahDataProvider]]"
           columns='[
