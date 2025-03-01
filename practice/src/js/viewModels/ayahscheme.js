@@ -18,38 +18,37 @@ define([
 
       // Hardcoded Surah Names (1-indexed)
       self.surahNames = [
-        "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",
-        "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
-        "Al-Anbiya", "Al-Hajj", "Al-Mu’minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
-        "Luqman", "As-Sajda", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir",
-        "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiya", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
-        "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi’a", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahina",
-        "As-Saff", "Al-Jumua", "Al-Munafiqoon", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqa", "Al-Maarij",
-        "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddathir", "Al-Qiyama", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa",
-        "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Burooj", "At-Tariq", "Al-A'la", "Al-Ghashiya", "Al-Fajr", "Al-Balad",
-        "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyina", "Az-Zalzala", "Al-Adiyat",
-        "Al-Qaria", "At-Takathur", "Al-Asr", "Al-Humaza", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kawthar", "Al-Kafiroon", "An-Nasr",
-        "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
+          "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",
+          "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
+          "Al-Anbiya", "Al-Hajj", "Al-Mu’minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
+          "Luqman", "As-Sajda", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir",
+          "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiya", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
+          "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi’a", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahina",
+          "As-Saff", "Al-Jumua", "Al-Munafiqoon", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqa", "Al-Maarij",
+          "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddathir", "Al-Qiyama", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa",
+          "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Burooj", "At-Tariq", "Al-A'la", "Al-Ghashiya", "Al-Fajr", "Al-Balad",
+          "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyina", "Az-Zalzala", "Al-Adiyat",
+          "Al-Qaria", "At-Takathur", "Al-Asr", "Al-Humaza", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kawthar", "Al-Kafiroon", "An-Nasr",
+          "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
       ];
 
-      // Hardcoded scheme names based on schemeId
+      // **Exact** scheme names as provided
       self.schemeMapping = {
-        0: "Total Count",
-        1: "Madani Awwal (First Madani)",
-        2: "Madani Thani (Second Madani)",
-        3: "Makki",
-        4: "Kufi",
-        5: "Basri",
-        6: "Damashqi",
-        7: "Himsi",
-        8: "Madani Awwal - Yazid Ibn Al-Qa'qa",
-        9: "Madani Awwal - Shaybah Ibn Nasah",
-        10: "Madani Thani - Yazid Ibn Al-Qa'qa",
-        11: "Madani Thani - Shaybah Ibn Nasah",
-        12: "Madani Awwal - Shaybah (after Nadhir - Mulk)",
-        13: "Madani Awwal - Shaybah (without Nadhir - Mulk)",
-        14: "Makki (No Khulf)",
-        15: "Basri (No Khulf)"
+          1: "المدنى الأول",
+          2: "المدني الثاني",
+          3: "المكي",
+          4: "الكوفي",
+          5: "البصري",
+          6: "الدمشقي",
+          7: "الحمصي",
+          8: "المدنى الأول، يزيد بن القعقاع",
+          9: "المدنى الأول، شيبة بن نصاح",
+          10: "المدنى الثاني، يزيد بن القعقاع",
+          11: "المدنى الثاني، شيبة بن نصاح",
+          12: "المدنى الأول، شيبة بن نصاح، بعد (نذير) - الملك",
+          13: "المدنى الأول، شيبة بن نصاح، بدون عد (نذير) - الملك",
+          14: "المكي، بلا خلف",
+          15: "البصري، بلا خلف"
       };
 
       // Fetch Ayah Data
@@ -64,12 +63,15 @@ define([
 
                   let row = {
                       seqNo: entry.seqNo,
-                      surahNo: `${entry.surahNo} (${surahName})`,  
+                      surahNo: `${entry.surahNo} (${surahName})`,  // Include Surah Name
                       ayahNoWithinSurah: entry.ayahNoWithinSurah,
                       ayahText: entry.ayah
                   };
 
-                  // Categorize schemes
+                  // Track schemes that have khulf separately
+                  let schemesWithKhulf = [];
+
+                  // Categorize schemes correctly
                   Object.keys(self.schemeMapping).forEach(schemeId => {
                       schemeId = parseInt(schemeId);
                       let schemeName = self.schemeMapping[schemeId];
@@ -78,12 +80,18 @@ define([
                           row[schemeName] = "Counts";
                       } else if (entry.schemesThatDoNotCount.includes(schemeId)) {
                           row[schemeName] = "Does Not Count";
-                      } else if (entry.schemesThatHaveKhulf.includes(schemeId)) {
-                          row[schemeName] = "Has Khulf";
                       } else {
-                          row[schemeName] = "-"; 
+                          row[schemeName] = "-"; // Default empty value
+                      }
+
+                      // Collect schemes that have khulf
+                      if (entry.schemesThatHaveKhulf.includes(schemeId)) {
+                          schemesWithKhulf.push(schemeName);
                       }
                   });
+
+                  // Add Schemes That Have Khulf column
+                  row["Schemes That Have Khulf"] = schemesWithKhulf.join(", ") || "-";
 
                   formattedData.push(row);
               });
@@ -96,7 +104,8 @@ define([
               let columns = [
                   { headerText: "Surah", field: "surahNo", sortable: "enabled" },
                   { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled" },
-                  { headerText: "Ayah Text", field: "ayahText" }
+                  { headerText: "Ayah Text", field: "ayahText" },
+                  { headerText: "Schemes That Have Khulf", field: "Schemes That Have Khulf", sortable: "enabled" }
               ];
 
               Object.values(self.schemeMapping).forEach(schemeName => {
