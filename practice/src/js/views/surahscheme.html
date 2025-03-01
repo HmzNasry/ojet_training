@@ -24,13 +24,7 @@
         <oj-table class="oj-sm-overflow-x-auto"
                   style="max-height: none; width: 100%; min-width: 1200px;" 
                   data="[[schemesDataProvider]]"
-                  columns='[
-                    {"headerText": "Surah ID", "field": "surahId"},
-                    {"headerText": "Scheme ID", "field": "schemeId"},
-                    {"headerText": "Scheme Name", "field": "schemeName"},
-                    {"headerText": "Min Count", "field": "minCount"},
-                    {"headerText": "Max Count", "field": "maxCount"}
-                  ]'
+                  columns="[[tableColumns]]"
                   display="grid">
             <template slot="noData">
                 <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
