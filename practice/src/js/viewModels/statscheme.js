@@ -11,15 +11,15 @@ define([
     function StatsSchemesViewModel() {
         let self = this;
 
-        // **Full API Data**
+        // Observables for data management
         self.fullSchemeArray = ko.observableArray([]);
-        self.schemeMap = {}; // Store ID -> Name mapping
+        self.schemeMap = {}; // Maps scheme ID to scheme name
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
-        self.isLoading = ko.observable(true); // Fixed the typo
+        self.isLoading = ko.observable(true);
 
-        // **Tree Data Structure**
+        // Tree structure definition
         let treeDataStats = [
             {
                 id: "0",
@@ -51,17 +51,13 @@ define([
                     {
                         id: "3",
                         title: "المكي",
-                        children: [
-                            { id: "14", title: "المكي، بلا خلف" }
-                        ]
+                        children: [{ id: "14", title: "المكي، بلا خلف" }]
                     },
                     { id: "4", title: "الكوفي" },
                     {
                         id: "5",
                         title: "البصري",
-                        children: [
-                            { id: "15", title: "البصري، بلا خلف" }
-                        ]
+                        children: [{ id: "15", title: "البصري، بلا خلف" }]
                     },
                     { id: "6", title: "الدمشقي" },
                     { id: "7", title: "الحمصي" }
@@ -69,27 +65,27 @@ define([
             }
         ];
 
-        // **Tree Data Provider**
+        // Initialize tree data provider
         self.treeDataProvider = new ArrayTreeDataProvider(treeDataStats, {
             keyAttributes: "id",
             childrenAttribute: "children"
         });
 
-        // **Track Selected Tree Nodes**
+        // Track selected tree nodes
         self.selected = new KeySet.ObservableKeySet();
 
-        // **Fetch API Data**
+        // Fetch API data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.fullSchemeArray(data);
 
-                // **Build ID-to-Name Map for Parent Lookups**
+                // Build mapping of scheme ID to name
                 data.forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 });
 
-                // **Find all leaf nodes from tree structure**
+                // Identify all leaf nodes
                 let leafNodeIds = [];
                 function findLeafNodes(nodes) {
                     nodes.forEach(node => {
@@ -102,10 +98,10 @@ define([
                 }
                 findLeafNodes(treeDataStats[0].children);
 
-                // **Select All Leaf Nodes in Tree View**
+                // Pre-select all leaf nodes in the tree view
                 self.selected.add(leafNodeIds);
 
-                // **Initially, Filter Table to Show All Leaf Nodes**
+                // Filter data for initial table display
                 let filteredData = data.filter(scheme =>
                     leafNodeIds.includes(scheme.schemeId.toString())
                 ).map(scheme => ({
@@ -118,31 +114,28 @@ define([
                 self.schemeArray(filteredData);
                 self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "schemeId" }));
 
-                // **Dynamically Generate Table Columns**
-                let columns = [
+                // Define table columns dynamically
+                self.tableColumns([
                     { headerText: "Scheme Name", field: "schemeName", sortable: "enabled" },
                     { headerText: "Min Ayahs", field: "minCount", sortable: "enabled" },
                     { headerText: "Max Ayahs", field: "maxCount", sortable: "enabled" },
                     { headerText: "Parent Scheme ID", field: "parentSchemeLabel", sortable: "enabled" }
-                ];
+                ]);
 
-                self.tableColumns(columns);
-
-                self.isLoading(false); // ✅ Mark loading as complete
+                self.isLoading(false);
             })
             .catch(error => {
                 console.error("Error fetching scheme data:", error);
-                self.isLoading(false); // ✅ Ensure loading state is updated even on failure
+                self.isLoading(false);
             });
 
-        // **Selection Change Handler**
+        // Handle selection changes
         self.selectedChanged = function (event) {
-            let selectedKeys = event.detail.value.values();
-            let selectedKeysArray = [...selectedKeys]; // Convert Set to Array
+            let selectedKeysArray = [...event.detail.value.values()];
 
             console.log("Selected IDs:", selectedKeysArray);
 
-            // **Filter table data based on selected leaves**
+            // Filter table data based on selected tree view items
             let filteredData = self.fullSchemeArray().filter(scheme =>
                 selectedKeysArray.includes(scheme.schemeId.toString())
             ).map(scheme => ({
