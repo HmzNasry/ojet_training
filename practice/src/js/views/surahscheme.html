@@ -8,7 +8,9 @@
         <oj-tree-view
             id="treeview"
             data="[[treeDataProvider]]"
-            selection-mode="multiple"
+            selected="{{selected}}"
+            selection-mode="leafOnly"
+            on-selected-changed="[[selectedChanged]]"
             aria-label="Tree View with JSON Data">
             <template slot="itemTemplate" data-oj-as="row">
                 <span class="oj-treeview-item-icon"></span>
@@ -19,18 +21,15 @@
         </oj-tree-view>
     </div>
 
-    <!-- Table -->
-    <div class="oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;">
-        <oj-table class="oj-sm-overflow-x-auto"
-                  style="max-height: none; width: 100%; min-width: 1200px;" 
+        <oj-table class="oj-sm-overflow-x-auto oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;"
+                  style="max-height: none; width: 100%; min-width: 1500px;" 
                   data="[[schemesDataProvider]]"
                   columns="[[tableColumns]]"
                   display="grid">
             <template slot="noData">
-              <span style="white-space: nowrap; padding-left: 20px;">
-                <oj-bind-text value="Loading Data..."></oj-bind-text>
-            </span>
+                <span style="white-space: nowrap; padding-left: 20px;">
+                    <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
+                </span>
             </template>
         </oj-table>
-    </div>
 </div>
