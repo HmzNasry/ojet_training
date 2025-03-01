@@ -21,8 +21,7 @@
     </div>
 
     <!-- Table -->
-    <div class="oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;">
-        <oj-table class="oj-sm-overflow-x-auto"
+        <oj-table class="oj-sm-overflow-x-auto oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;"
                   style="max-height: none; width: 100%; min-width: 1500px;" 
                   data="[[schemesDataProvider]]"
                   columns='[
@@ -36,5 +35,4 @@
                 <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
             </template>
         </oj-table>
-    </div>
 </div>

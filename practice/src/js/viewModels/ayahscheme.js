@@ -79,7 +79,7 @@ define([
                       if (entry.schemesThatCount.includes(schemeId)) {
                           row[schemeName] = "Counts";
                       } else if (entry.schemesThatDoNotCount.includes(schemeId)) {
-                          row[schemeName] = "Does Not Count";
+                          row[schemeName] = "Doesn't Count";
                       } else {
                           row[schemeName] = "-"; // Default empty value
                       }
