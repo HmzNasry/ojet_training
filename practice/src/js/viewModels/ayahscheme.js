@@ -13,7 +13,6 @@ define([
 
       self.ayahArray = ko.observableArray([]);
       self.ayahDataProvider = ko.observable();
-      self.isLoading = ko.observable(true);
       self.tableColumns = ko.observableArray([]);
 
       // Hardcoded Surah Names (1-indexed)
@@ -98,8 +97,6 @@ define([
 
               self.ayahArray(formattedData);
               self.ayahDataProvider(new ArrayDataProvider(self.ayahArray, { keyAttributes: 'seqNo' }));
-              self.isLoading(false);
-
               // Dynamically generate table columns
               let columns = [
                   { headerText: "Surah", field: "surahNo", sortable: "enabled" },
@@ -116,7 +113,6 @@ define([
           })
           .catch(error => {
               console.error("Error fetching data:", error);
-              self.isLoading(false);
           });
 
       // Dummy Tree Data for Sidebar

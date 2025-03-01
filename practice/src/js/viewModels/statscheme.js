@@ -13,18 +13,15 @@ define([
 
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
-        self.isLoading = ko.observable(true);
 
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.schemeArray(data);
                 self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: 'schemeId' }));
-                self.isLoading(false);
             })
             .catch(error => {
                 console.error("Error fetching scheme data:", error);
-                self.isLoading(false);
             });
 
         // Unique Tree View Data

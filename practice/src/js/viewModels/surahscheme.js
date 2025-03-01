@@ -13,7 +13,6 @@ define([
 
     self.surahArray = ko.observableArray([]);
     self.schemesDataProvider = ko.observable();
-    self.isLoading = ko.observable(true);
     self.tableColumns = ko.observableArray([]);
 
     // Hardcoded Surah Names Array (1-indexed)
@@ -67,11 +66,9 @@ define([
         });
 
         self.tableColumns(columns);
-        self.isLoading(false);
       })
       .catch(error => {
         console.error("Error fetching surah data:", error);
-        self.isLoading(false);
       });
 
     // Unique Tree Data for this module
