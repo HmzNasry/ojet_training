@@ -130,7 +130,11 @@ define([
               let row = { surahId: `${surahId} (${self.schemeMap[surahId] || "Unknown"})` };
 
               surahSchemes.forEach(scheme => {
+                if(scheme.minCount != scheme.maxCount) {
                   row[scheme.schemeName] = `${scheme.minCount}, ${scheme.maxCount}`;
+                } else if (scheme.minCount == scheme.maxCount) {
+                  row[scheme.schemeName] = scheme.maxCount
+                }
               });
 
               return row;
