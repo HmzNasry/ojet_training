@@ -35,7 +35,6 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojknocko
 
       let navData = [
         { path: '', redirect: 'home' },
-        { path: 'home', detail: { label: 'Home', iconClass: 'oj-ux-ico-home' } },
         { path: 'surahscheme', detail: { label: 'Surah Scheme', iconClass: ' oj-ux-ico-book' } },
         { path: 'ayahscheme', detail: { label: 'Ayah Scheme', iconClass: 'oj-ux-ico-add-detail-page' } },
         { path: 'statscheme', detail: { label: 'Stats Scheme', iconClass: 'oj-ux-ico-analytics' } }
@@ -74,15 +73,6 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojknocko
       this.appName = ko.observable("Counting Schemes");
       // User Info used in Global Navigation area
       this.userLogin = ko.observable("john.hancock@oracle.com");
-
-      // Footer
-      this.footerLinks = [
-        {name: 'About Oracle', linkId: 'aboutOracle', linkTarget:'http://www.oracle.com/us/corporate/index.html#menu-about'},
-        { name: "Contact Us", id: "contactUs", linkTarget: "http://www.oracle.com/us/corporate/contact/index.html" },
-        { name: "Legal Notices", id: "legalNotices", linkTarget: "http://www.oracle.com/us/legal/index.html" },
-        { name: "Terms Of Use", id: "termsOfUse", linkTarget: "http://www.oracle.com/us/legal/terms/index.html" },
-        { name: "Your Privacy Rights", id: "yourPrivacyRights", linkTarget: "http://www.oracle.com/us/legal/privacy/index.html" },
-      ];
      }
      // release the application bootstrap busy state
      Context.getPageContext().getBusyContext().applicationBootstrapComplete();
