@@ -1,5 +1,52 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Ayah</h2>
 
+<style>
+    .right-align {
+    text-align: right !important;
+    direction: rtl;
+    }
+
+    .ayah-text-column {
+        min-width: 300px;
+        max-width: 300px; 
+        word-wrap: break-word; 
+        white-space: normal;
+        overflow-wrap: break-word; 
+        overflow-y: auto;
+    }
+
+    .schemeColumn {
+        min-width: 90px;
+        word-wrap: break-word;
+        white-space: normal; 
+        overflow-wrap: break-word;      
+    }
+
+    .oj-table {
+        display: block;
+        max-width: 100%; 
+        overflow-x: auto; 
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .green {
+    color: green;
+    font-weight: bold;
+    }
+
+    .red {
+        color: red;
+        font-weight: bold;
+    }
+
+
+
+</style>
+
 <!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
 
@@ -23,16 +70,24 @@
     </div>
 
     <!-- Table -->
-    <oj-table class="oj-sm-overflow-x-auto oj-flex-item oj-sm-12" 
-              style="width: 100%; overflow-x: auto; max-height: none; min-width: 1500px;" 
+<!-- Table Wrapper -->
+<div class="table-wrapper">
+    <oj-table class="oj-table"
               data="[[ayahDataProvider]]"
               columns="[[tableColumns]]"
               display="grid">
+        <template slot="cellTemplate" data-oj-as="cell">
+            <span :class="[[ cell.data === 'Counts' ? 'green' : (cell.data === `Doesn't Count` ? 'red' : '') ]]">
+                <oj-bind-text value="[[cell.data]]"></oj-bind-text>
+            </span>
+        </template>
         <template slot="noData">
             <span style="white-space: nowrap; padding-left: 20px;">
                 <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
             </span>
         </template>
     </oj-table>
+</div>
+
 
 </div>

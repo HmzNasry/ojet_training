@@ -155,11 +155,11 @@ define([
           let columns = [
               { headerText: "Surah", field: "surahNo", sortable: "enabled" },
               { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled" },
-              { headerText: "Ayah Text", field: "ayahText" }
+              { headerText: "Ayah Text", field: "ayahText", headerClassName: "ayah-text-column", className: "right-align ayah-text-column"}
           ];
 
           selectedSchemeNames.forEach(scheme => {
-              columns.push({ headerText: scheme, field: scheme, sortable: "enabled" });
+              columns.push({ headerText: scheme, field: scheme, sortable: "enabled", className: "schemeColumn"});
           });
 
           self.tableColumns(columns);
@@ -169,12 +169,12 @@ define([
 
       // **Helper: Get Surah Name**
       self.getSurahName = function (surahNo) {
-          let surahNames = [
-              "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",
-              "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
-              "Al-Anbiya", "Al-Hajj", "Al-Mu’minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
-              "Luqman", "As-Sajda", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir"
-          ];
+        let surahNames = [
+            "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",
+            "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
+            "Al-Anbiya", "Al-Hajj", "Al-Mu’minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
+            "Luqman", "As-Sajda", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir"
+        ];
           return surahNames[surahNo - 1] || `Surah ${surahNo}`;
       };
 
