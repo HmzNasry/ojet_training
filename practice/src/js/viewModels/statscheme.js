@@ -116,10 +116,9 @@ define([
 
                 // Define table columns dynamically
                 self.tableColumns([
-                    { headerText: "Scheme Name", field: "schemeName", sortable: "enabled" },
-                    { headerText: "Min Ayahs", field: "minCount", sortable: "enabled" },
-                    { headerText: "Max Ayahs", field: "maxCount", sortable: "enabled" },
-                    { headerText: "Parent Scheme ID", field: "parentSchemeLabel", sortable: "enabled" }
+                    { headerText: "Counting Scheme", field: "schemeName", sortable: "enabled", className: "rtl" },
+                    { headerText: "Number of Ayahs", field: "minCount", sortable: "enabled", className: "centered" },
+                    { headerText: "Parent Scheme", field: "parentSchemeLabel", sortable: "enabled", className: "rtl" }
                 ]);
 
                 self.isLoading(false);
@@ -141,7 +140,7 @@ define([
             ).map(scheme => ({
                 ...scheme,
                 parentSchemeLabel: scheme.parentSchemeId !== null
-                    ? `${scheme.parentSchemeId} (${self.schemeMap[scheme.parentSchemeId] || "N/A"})`
+                    ? `${self.schemeMap[scheme.parentSchemeId] || "N/A"}`
                     : "N/A"
             }));
 
