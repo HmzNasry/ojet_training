@@ -116,9 +116,10 @@ define([
 
                 // Define table columns dynamically
                 self.tableColumns([
-                    { headerText: "Counting Scheme", field: "schemeName", sortable: "enabled", className: "rtl" },
                     { headerText: "Number of Ayahs", field: "minCount", sortable: "enabled", className: "centered" },
+                    { headerText: "Counting Scheme", field: "schemeName", sortable: "enabled", className: "rtl" },
                     { headerText: "Parent Scheme", field: "parentSchemeLabel", sortable: "enabled", className: "rtl" }
+
                 ]);
 
                 self.isLoading(false);
