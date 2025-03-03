@@ -12,15 +12,13 @@ define([
     function StatsSchemesViewModel() {
         let self = this;
 
-        // Observables for data management
         self.fullSchemeArray = ko.observableArray([]);
-        self.schemeMap = {}; // Maps scheme ID to scheme name
+        self.schemeMap = {};
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
 
-        // Tree structure definition
         let treeDataStats = [
             {
                 id: "0",
@@ -66,27 +64,22 @@ define([
             }
         ];
 
-        // Initialize tree data provider
         self.treeDataProvider = new ArrayTreeDataProvider(treeDataStats, {
             keyAttributes: "id",
             childrenAttribute: "children"
         });
 
-        // Track selected tree nodes
         self.selected = new KeySet.ObservableKeySet();
 
-        // Fetch API data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.fullSchemeArray(data);
 
-                // Build mapping of scheme ID to name
                 data.forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 });
 
-                // Identify all leaf nodes
                 let leafNodeIds = [];
                 function findLeafNodes(nodes) {
                     nodes.forEach(node => {
@@ -99,27 +92,25 @@ define([
                 }
                 findLeafNodes(treeDataStats[0].children);
 
-                // Pre-select all leaf nodes in the tree view
                 self.selected.add(leafNodeIds);
 
-                // Filter data for initial table display and remove minCount/maxCount
                 let filteredData = data.filter(scheme =>
                     leafNodeIds.includes(scheme.schemeId.toString())
                 ).map(scheme => {
-                    const { minCount, maxCount, ...rest } = scheme;
+                    const { minCount, maxCount, parentSchemeId, ...rest } = scheme;
                     return {
                         ...rest,
-                        parentSchemeLabel: scheme.parentSchemeId !== null
-                            ? `${scheme.parentSchemeId} (${self.schemeMap[scheme.parentSchemeId] || "N/A"})`
-                            : "N/A",
-                        ayahCount: minCount
+                        ayahCount: minCount,
+                        parentSchemeId: parentSchemeId,
+                        parentSchemeLabel: parentSchemeId !== null
+                            ? `${self.schemeMap[parentSchemeId] || "N/A"}`
+                            : "N/A"
                     };
                 });
 
                 self.schemeArray(filteredData);
                 self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "schemeId" }));
 
-                // Define table columns dynamically using "ayahCount"
                 self.tableColumns([
                     { headerText: "Number of Ayahs", field: "ayahCount", sortable: "enabled", className: "centered" },
                     { headerText: "Counting Scheme", field: "schemeName", sortable: "enabled", className: "rtl" },
@@ -133,23 +124,23 @@ define([
                 self.isLoading(false);
             });
 
-        // Handle selection changes
         self.selectedChanged = function (event) {
             let selectedKeysArray = [...event.detail.value.values()];
 
             console.log("Selected IDs:", selectedKeysArray);
 
-            // Filter table data based on selected tree view items and remove minCount/maxCount
+
             let filteredData = self.fullSchemeArray().filter(scheme =>
                 selectedKeysArray.includes(scheme.schemeId.toString())
             ).map(scheme => {
-                const { minCount, maxCount, ...rest } = scheme;
+                const { minCount, maxCount, parentSchemeId, ...rest } = scheme;
                 return {
                     ...rest,
-                    parentSchemeLabel: scheme.parentSchemeId !== null
-                        ? `${self.schemeMap[scheme.parentSchemeId] || "N/A"}`
-                        : "N/A",
-                    ayahCount: minCount
+                    ayahCount: minCount, 
+                    parentSchemeId: parentSchemeId, 
+                    parentSchemeLabel: parentSchemeId !== null
+                        ? `${self.schemeMap[parentSchemeId] || "N/A"}`
+                        : "N/A"
                 };
             });
 
@@ -157,20 +148,17 @@ define([
             self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "schemeId" }));
         };
 
-        // **Export Functionality Integration**
-        // Define export options for dropdown
+
         self.exportOptions = [
             { label: "Export as JSON", value: "json" },
-            { label: "Export as CSV", value: "csv" },
+            { label: "Export as CSV", value: "csv" }
         ];
 
-        // Define export value observable
         self.exportValue = ko.observable(null);
 
-        // Function to handle export selection
         self.exportTableData = function (event) {
             let selectedFormat = event.detail.value;
-            let data = ko.toJS(self.schemeArray()); // Get filtered table data (which now includes ayahCount only)
+            let data = ko.toJS(self.schemeArray());
             switch (selectedFormat) {
                 case "json":
                     exportJSON(data);
@@ -179,11 +167,9 @@ define([
                     exportCSV(data);
                     break;
             }
-            // Reset export value so dropdown always displays "Export Data"
+
             self.exportValue(null);
         };
-
-        // **Export Functions**
         function exportJSON(data) {
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -195,9 +181,17 @@ define([
 
         function exportCSV(data) {
             if (!data || data.length === 0) return;
-            const headers = Object.keys(data[0]).join(",") + "\n";
+            const csvOrder = ["schemeId", "schemeName", "ayahCount", "parentSchemeId", "parentSchemeName"];
+            const csvMapping = {
+                schemeId: "schemeId",
+                schemeName: "schemeName",
+                ayahCount: "parentSchemeId",  // Theres some problem forcing us to swap these
+                parentSchemeId: "ayahCount", // ^
+                parentSchemeName: "parentSchemeLabel"
+            };
+            const headers = csvOrder.join(",") + "\n";
             const rows = data.map(row =>
-                Object.values(row).map(value => `"${value}"`).join(",")
+                csvOrder.map(key => `"${row[csvMapping[key]]}"`).join(",")
             ).join("\n");
             const csvContent = headers + rows;
             const blob = new Blob([csvContent], { type: "text/csv" });
@@ -206,6 +200,7 @@ define([
             link.download = "scheme_stats.csv";
             link.click();
         }
+        
     }
 
     return StatsSchemesViewModel;

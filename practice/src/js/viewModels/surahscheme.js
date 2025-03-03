@@ -12,7 +12,6 @@ define([
     function SurahSchemesViewModel() {
         let self = this;
   
-        // Observables
         self.fullSurahArray = ko.observableArray([]);
         self.schemeMap = {};
         self.surahArray = ko.observableArray([]);
@@ -20,7 +19,6 @@ define([
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
   
-        // Export Functionality Integration
         self.exportValue = ko.observable(null);
         self.exportOptions = [
             { label: "Export as JSON", value: "json" },
@@ -28,7 +26,7 @@ define([
         ];
         self.exportTableData = function (event) {
             let selectedFormat = event.detail.value;
-            let data = ko.toJS(self.surahArray()); // Get filtered table data
+            let data = ko.toJS(self.surahArray()); 
             switch (selectedFormat) {
                 case "json":
                     exportJSON(data);
@@ -37,7 +35,6 @@ define([
                     exportCSV(data);
                     break;
             }
-            // Reset export value so dropdown always displays "Export Data"
             self.exportValue(null);
         };
   
@@ -64,7 +61,6 @@ define([
             link.click();
         }
   
-        // Tree structure for selection
         let treeDataStats = [
             {
                 id: "0",
@@ -97,7 +93,6 @@ define([
   
         self.selected = new KeySet.ObservableKeySet();
   
-        // Fetch API Data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
             .then(response => response.json())
             .then(data => {
@@ -128,14 +123,12 @@ define([
                 self.isLoading(false);
             });
   
-        // Handle selection changes
         self.selectedChanged = function (event) {
             let selectedKeysArray = [...event.detail.value.values()];
             console.log("Selected IDs:", selectedKeysArray);
             self.filterData(selectedKeysArray);
         };
   
-        // Filter and update table data
         self.filterData = function (selectedKeys) {
             let filteredData = Object.keys(self.fullSurahArray()).map(surahId => {
                 let surahSchemes = self.fullSurahArray()[surahId].filter(scheme =>
@@ -167,7 +160,6 @@ define([
             self.schemesDataProvider(new ArrayDataProvider(self.surahArray, { keyAttributes: "surahId" }));
         };
   
-        // Retrieve Surah name based on ID
         self.getSurahName = function (surahId) {
             const surahNames = [
                 "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",

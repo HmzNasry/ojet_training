@@ -12,15 +12,14 @@ define([
     function AyahSchemesViewModel() {
         let self = this;
   
-        // Observables
         self.fullAyahArray = ko.observableArray([]);
-        self.schemeMap = {}; // Stores schemeId -> schemeName
+        self.schemeMap = {};
         self.ayahArray = ko.observableArray([]);
         self.ayahDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
   
-        // Define Scheme Tree Structure
+
         let treeDataStats = [
             {
                 id: "0",
@@ -66,29 +65,24 @@ define([
             }
         ];
   
-        // Tree Data Provider
         self.treeDataProvider = new ArrayTreeDataProvider(treeDataStats, {
             keyAttributes: "id",
             childrenAttribute: "children"
         });
   
-        // Track selected nodes
         self.selected = new KeySet.ObservableKeySet();
   
-        // Fetch API Data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
             .then(response => response.json())
             .then(data => {
                 self.fullAyahArray(data);
   
-                // Store scheme ID -> Name
                 Object.values(data).forEach(entry => {
                     entry.schemesThatCount.forEach(schemeId => {
                         self.schemeMap[schemeId] = self.getSchemeName(schemeId);
                     });
                 });
   
-                // Get all leaf nodes
                 let leafNodeIds = [];
                 function findLeafNodes(nodes) {
                     nodes.forEach(node => {
@@ -101,10 +95,8 @@ define([
                 }
                 findLeafNodes(treeDataStats[0].children);
   
-                // Select all leaf nodes by default
                 self.selected.add(leafNodeIds);
   
-                // Initial table filtering
                 self.filterData(leafNodeIds);
   
                 self.isLoading(false);
@@ -114,21 +106,19 @@ define([
                 self.isLoading(false);
             });
   
-        // **Selection Change Handling**
         self.selectedChanged = function (event) {
             let selectedKeysArray = [...event.detail.value.values()];
             console.log("Selected Scheme IDs:", selectedKeysArray);
             self.filterData(selectedKeysArray);
         };
   
-        // **Filtering Logic**
         self.filterData = function (selectedKeys) {
             let filteredData = self.fullAyahArray().map(entry => {
                 let relevantSchemes = entry.schemesThatCount.filter(schemeId =>
                     selectedKeys.includes(schemeId.toString())
                 );
   
-                if (relevantSchemes.length === 0) return null; // Skip ayahs with no selected schemes
+                if (relevantSchemes.length === 0) return null;
   
                 let surahName = self.getSurahName(entry.surahNo);
                 let row = {
@@ -150,7 +140,6 @@ define([
                 return row;
             }).filter(row => row !== null);
   
-            // **Generate Table Columns (Only Show Selected Schemes)**
             let selectedSchemeNames = selectedKeys.map(id => self.getSchemeName(id)).filter(name => name);
   
             let columns = [
@@ -168,7 +157,6 @@ define([
             self.ayahDataProvider(new ArrayDataProvider(self.ayahArray, { keyAttributes: "seqNo" }));
         };
   
-        // **Helper: Get Surah Name**
         self.getSurahName = function (surahNo) {
           let surahNames = [
               "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah",
@@ -187,7 +175,6 @@ define([
             return surahNames[surahNo - 1] || `Surah ${surahNo}`;
         };
   
-        // **Helper: Get Scheme Name**
         self.getSchemeName = function (schemeId) {
             let schemeMapping = {
                 0: "الكل", 1: "المدنى الأول", 2: "المدني الثاني", 3: "المكي", 4: "الكوفي",
@@ -200,17 +187,16 @@ define([
             return schemeMapping[schemeId] || `Scheme ${schemeId}`;
         };
   
-        // **Export Functionality Integration**
-        // Define export options for dropdown
+
         self.exportOptions = [
             { label: "Export as JSON", value: "json" },
             { label: "Export as CSV", value: "csv" },
         ];
   
-        // Function to handle export selection
+
         self.exportTableData = function (event) {
             let selectedFormat = event.detail.value;
-            let data = ko.toJS(self.ayahArray()); // Get formatted table data
+            let data = ko.toJS(self.ayahArray());
   
             switch (selectedFormat) {
                 case "json":
@@ -222,7 +208,6 @@ define([
             }
         };
   
-        // **Export Functions**
         function exportJSON(data) {
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
