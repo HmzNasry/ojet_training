@@ -2,21 +2,45 @@
 
 <style>
     .rtl {
-    text-align: right !important;
-    direction: rtl;
-    min-width: 90px;
-    word-wrap: break-word;
-    white-space: normal; 
-    overflow-wrap: break-word;   
+        text-align: right !important;
+        direction: rtl;
+        min-width: 90px;
+        word-wrap: break-word;
+        white-space: normal; 
+        overflow-wrap: break-word;
     }
 
     .centered {
         text-align: center !important;
     }
+
+    /* Match AyahSchemes style */
+    .oj-table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
 </style>
 
 <!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
+
+    <!-- Export Dropdown using oj-select-single -->
+    <div style="margin-bottom: 15px;">
+        <oj-select-single
+            id="exportDropdown"
+            placeholder="Export Data"
+            label-hint="Export Data"
+            value="[[exportValue]]"
+            data="[[new oj.ArrayDataProvider(exportOptions, { keyAttributes: 'value' })]]"
+            on-oj-value-action="[[exportTableData]]">
+        </oj-select-single>
+    </div>
 
     <!-- Tree View -->
     <div class="oj-flex-item oj-sm-12"
@@ -37,17 +61,18 @@
         </oj-tree-view>
     </div>
 
-    <!-- Table -->
-    <oj-table class="oj-sm-overflow-x-auto oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;"
-              style="max-height: none; width: 100%; min-width: 1500px;" 
-              data="[[schemesDataProvider]]"
-              columns="[[tableColumns]]"
-              display="grid">
-        <template slot="noData">
-            <span style="white-space: nowrap; padding-left: 20px;">
-                <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
-            </span>
-        </template>
-    </oj-table>
+    <!-- Table Wrapper -->
+    <div class="table-wrapper">
+        <oj-table class="oj-table"
+                  data="[[schemesDataProvider]]"
+                  columns="[[tableColumns]]"
+                  display="grid">
+            <template slot="noData">
+                <span style="white-space: nowrap; padding-left: 20px;">
+                    <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
+                </span>
+            </template>
+        </oj-table>
+    </div>
 
 </div>

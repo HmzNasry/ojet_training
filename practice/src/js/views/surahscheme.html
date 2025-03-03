@@ -1,9 +1,35 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Surah</h2>
 
+<style>
+    .oj-table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* (Optional) You can add additional classes if needed */
+</style>
+
+<!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
 
+    <!-- Export Dropdown using oj-select-single -->
+    <div style="margin-bottom: 15px;">
+        <oj-select-single
+            id="exportDropdown"
+            label-hint="Export Data"
+            data="[[new oj.ArrayDataProvider(exportOptions, { keyAttributes: 'value' })]]"
+            on-oj-value-action="[[exportTableData]]">
+        </oj-select-single>
+    </div>
+
     <!-- Tree View -->
-    <div class="oj-flex-item oj-sm-12" 
+    <div class="oj-flex-item oj-sm-12"
          style="width: 100%; max-width: 100%; overflow: hidden; padding-bottom: 15px;">
         <oj-tree-view
             id="treeview"
@@ -21,8 +47,9 @@
         </oj-tree-view>
     </div>
 
-        <oj-table class="oj-sm-overflow-x-auto oj-flex-item oj-sm-12" style="width: 100%; overflow-x: auto;"
-                  style="max-height: none; width: 100%; min-width: 1500px;" 
+    <!-- Table Wrapper -->
+    <div class="table-wrapper">
+        <oj-table class="oj-table"
                   data="[[schemesDataProvider]]"
                   columns="[[tableColumns]]"
                   display="grid">
@@ -32,4 +59,6 @@
                 </span>
             </template>
         </oj-table>
+    </div>
+
 </div>

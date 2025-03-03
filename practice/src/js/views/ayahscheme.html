@@ -2,30 +2,30 @@
 
 <style>
     .right-align {
-    text-align: right !important;
-    direction: rtl;
+        text-align: right !important;
+        direction: rtl;
     }
 
     .ayah-text-column {
         min-width: 300px;
-        max-width: 300px; 
-        word-wrap: break-word; 
+        max-width: 300px;
+        word-wrap: break-word;
         white-space: normal;
-        overflow-wrap: break-word; 
+        overflow-wrap: break-word;
         overflow-y: auto;
     }
 
     .schemeColumn {
         min-width: 90px;
         word-wrap: break-word;
-        white-space: normal; 
-        overflow-wrap: break-word;      
+        white-space: normal;
+        overflow-wrap: break-word;
     }
 
     .oj-table {
         display: block;
-        max-width: 100%; 
-        overflow-x: auto; 
+        max-width: 100%;
+        overflow-x: auto;
     }
 
     .table-wrapper {
@@ -40,13 +40,20 @@
     .red {
         color: red;
     }
-
-
-
 </style>
 
 <!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
+
+    <!-- Export Dropdown using oj-select-single -->
+    <div style="margin-bottom: 15px;">
+        <oj-select-single
+            id="exportDropdown"
+            label-hint="Export Data"
+            data="[[new oj.ArrayDataProvider(exportOptions, { keyAttributes: 'value' })]]"
+            on-oj-value-action="[[exportTableData]]">
+        </oj-select-single>
+    </div>
 
     <!-- Tree View -->
     <div class="oj-flex-item oj-sm-12"
@@ -67,25 +74,23 @@
         </oj-tree-view>
     </div>
 
-    <!-- Table -->
-<!-- Table Wrapper -->
-<div class="table-wrapper">
-    <oj-table class="oj-table"
-              data="[[ayahDataProvider]]"
-              columns="[[tableColumns]]"
-              display="grid">
-        <template slot="cellTemplate" data-oj-as="cell">
-            <span :class="[[ cell.data === 'Counts' ? 'green' : (cell.data === `Doesn't Count` ? 'red' : '') ]]">
-                <oj-bind-text value="[[cell.data]]"></oj-bind-text>
-            </span>
-        </template>
-        <template slot="noData">
-            <span style="white-space: nowrap; padding-left: 20px;">
-                <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
-            </span>
-        </template>
-    </oj-table>
-</div>
-
+    <!-- Table Wrapper -->
+    <div class="table-wrapper">
+        <oj-table class="oj-table"
+                  data="[[ayahDataProvider]]"
+                  columns="[[tableColumns]]"
+                  display="grid">
+            <template slot="cellTemplate" data-oj-as="cell">
+                <span :class="[[ cell.data === 'Counts' ? 'green' : (cell.data === `Doesn't Count` ? 'red' : '') ]]">
+                    <oj-bind-text value="[[cell.data]]"></oj-bind-text>
+                </span>
+            </template>
+            <template slot="noData">
+                <span style="white-space: nowrap; padding-left: 20px;">
+                    <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
+                </span>
+            </template>
+        </oj-table>
+    </div>
 
 </div>
