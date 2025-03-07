@@ -71,52 +71,106 @@ define([
 
         self.selected = new KeySet.ObservableKeySet();
 
+        // Flatten tree using DFS while tracking parent-child relationships
+        function flattenTreeDFS(node, parentId = null, parentTitle = null) {
+            let result = [];
+            let entry = { id: node.id, title: node.title, parentId: parentId, parentTitle: parentTitle };
+
+            result.push(entry);
+
+            if (node.children) {
+                node.children.forEach(child => {
+                    result = result.concat(flattenTreeDFS(child, node.id, node.title));
+                });
+            }
+
+            return result;
+        }
+
+        let flattenedSchemes = flattenTreeDFS(treeDataStats[0]);
+        self.selected.add(flattenedSchemes.map(item => item.id));
+
+        // Create a parent-child mapping to propagate selections correctly
+        let parentChildMap = {};
+        flattenedSchemes.forEach(node => {
+            if (node.parentId !== null) {
+                if (!parentChildMap[node.parentId]) {
+                    parentChildMap[node.parentId] = [];
+                }
+                parentChildMap[node.parentId].push(node.id);
+            }
+        });
+
+        function getSelectedWithParents(selectedKeys) {
+            let allSelected = new Set(selectedKeys);
+
+            // Ensure that if a child is selected, the parent is also included
+            selectedKeys.forEach(key => {
+                let parent = flattenedSchemes.find(node => node.id === key)?.parentId;
+                while (parent !== null) {
+                    allSelected.add(parent);
+                    parent = flattenedSchemes.find(node => node.id === parent)?.parentId || null;
+                }
+            });
+
+            // Ensure that if a parent is selected, all its children are also selected
+            selectedKeys.forEach(key => {
+                if (parentChildMap[key]) {
+                    parentChildMap[key].forEach(childId => allSelected.add(childId));
+                }
+            });
+
+            return Array.from(allSelected);
+        }
+
+        function updateTableData() {
+            let selectedKeysArray = getSelectedWithParents([...self.selected().values()]);
+
+            if (selectedKeysArray.length === 0) {
+                self.schemeArray([]);
+                self.tableColumns([]);
+                self.schemesDataProvider(new ArrayDataProvider([], { keyAttributes: "dummyKey" }));
+                return;
+            }
+
+            let selectedSchemes = flattenedSchemes.filter(node => selectedKeysArray.includes(node.id));
+            let singleRow = {};
+
+            selectedSchemes.forEach(node => {
+                let schemeData = self.fullSchemeArray().find(s => s.schemeId.toString() === node.id);
+                if (schemeData) {
+                    if (schemeData.minCount === schemeData.maxCount) {
+                        singleRow[node.title] = schemeData.minCount;
+                    } else {
+                        singleRow[node.title] = `${schemeData.minCount} - ${schemeData.maxCount}`;
+                    }
+                } else {
+                    singleRow[node.title] = "N/A";
+                }
+            });
+
+            self.schemeArray([singleRow]);
+            self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "dummyKey" }));
+
+            let columns = selectedSchemes.map(node => ({
+                headerText: node.title,
+                field: node.title,
+                sortable: "enabled",
+                className: "schemeColumn",
+            }));
+
+            self.tableColumns(columns);
+        }
+
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.fullSchemeArray(data);
-
                 data.forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 });
 
-                let leafNodeIds = [];
-                function findLeafNodes(nodes) {
-                    nodes.forEach(node => {
-                        if (node.children) {
-                            findLeafNodes(node.children);
-                        } else {
-                            leafNodeIds.push(node.id);
-                        }
-                    });
-                }
-                findLeafNodes(treeDataStats[0].children);
-
-                self.selected.add(leafNodeIds);
-
-                let filteredData = data.filter(scheme =>
-                    leafNodeIds.includes(scheme.schemeId.toString())
-                ).map(scheme => {
-                    const { minCount, maxCount, parentSchemeId, ...rest } = scheme;
-                    return {
-                        ...rest,
-                        ayahCount: minCount,
-                        parentSchemeId: parentSchemeId,
-                        parentSchemeLabel: parentSchemeId !== null
-                            ? `${self.schemeMap[parentSchemeId] || "N/A"}`
-                            : "N/A"
-                    };
-                });
-
-                self.schemeArray(filteredData);
-                self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "schemeId" }));
-
-                self.tableColumns([
-                    { headerText: "Number of Ayahs", field: "ayahCount", sortable: "enabled", className: "centered" },
-                    { headerText: "Counting Scheme", field: "schemeName", sortable: "enabled", className: "rtl" },
-                    { headerText: "Parent Scheme", field: "parentSchemeLabel", sortable: "enabled", className: "rtl" }
-                ]);
-
+                updateTableData();
                 self.isLoading(false);
             })
             .catch(error => {
@@ -126,28 +180,9 @@ define([
 
         self.selectedChanged = function (event) {
             let selectedKeysArray = [...event.detail.value.values()];
-
             console.log("Selected IDs:", selectedKeysArray);
-
-
-            let filteredData = self.fullSchemeArray().filter(scheme =>
-                selectedKeysArray.includes(scheme.schemeId.toString())
-            ).map(scheme => {
-                const { minCount, maxCount, parentSchemeId, ...rest } = scheme;
-                return {
-                    ...rest,
-                    ayahCount: minCount, 
-                    parentSchemeId: parentSchemeId, 
-                    parentSchemeLabel: parentSchemeId !== null
-                        ? `${self.schemeMap[parentSchemeId] || "N/A"}`
-                        : "N/A"
-                };
-            });
-
-            self.schemeArray(filteredData);
-            self.schemesDataProvider(new ArrayDataProvider(self.schemeArray, { keyAttributes: "schemeId" }));
+            updateTableData();
         };
-
 
         self.exportOptions = [
             { label: "Export as JSON", value: "json" },
@@ -170,6 +205,7 @@ define([
 
             self.exportValue(null);
         };
+
         function exportJSON(data) {
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -181,17 +217,9 @@ define([
 
         function exportCSV(data) {
             if (!data || data.length === 0) return;
-            const csvOrder = ["schemeId", "schemeName", "ayahCount", "parentSchemeId", "parentSchemeName"];
-            const csvMapping = {
-                schemeId: "schemeId",
-                schemeName: "schemeName",
-                ayahCount: "parentSchemeId",  // Theres some problem forcing us to swap these
-                parentSchemeId: "ayahCount", // ^
-                parentSchemeName: "parentSchemeLabel"
-            };
-            const headers = csvOrder.join(",") + "\n";
+            const headers = Object.keys(data[0]).join(",") + "\n";
             const rows = data.map(row =>
-                csvOrder.map(key => `"${row[csvMapping[key]]}"`).join(",")
+                Object.values(row).map(value => `"${value}"`).join(",")
             ).join("\n");
             const csvContent = headers + rows;
             const blob = new Blob([csvContent], { type: "text/csv" });

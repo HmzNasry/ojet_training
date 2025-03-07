@@ -145,7 +145,7 @@ define([
             let columns = [
                 { headerText: "Surah", field: "surahNo", sortable: "enabled" },
                 { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled" },
-                { headerText: "Ayah Text", field: "ayahText", headerClassName: "ayah-text-column", className: "right-align ayah-text-column"}
+                { headerText: "Ayah Text", field: "ayahText", headerClassName: "ayah-text-column", className: "right-align ayah-text-column"} // Todo: add serial no
             ];
   
             selectedSchemeNames.forEach(scheme => {
