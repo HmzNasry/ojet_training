@@ -11,22 +11,32 @@
         width: 100%;
         overflow-x: auto;
     }
+    #export-btn {
+    border: 1px solid black;
+    padding: 10px;
+    border-radius: 2.5px;
+    width: 100%;
+    background-color: white;
+    color: black;
+    cursor: pointer;
+    transition: 0.5s ease-in-out;
+  }
+  #export-btn:hover {
+    background-color: black;
+    color: white;
+  }
     
-    /* (Optional) You can add additional classes if needed */
 </style>
 
 <!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
 
-    <!-- Export Dropdown using oj-select-single -->
-    <div style="margin-bottom: 15px;">
-        <oj-select-single
-            id="exportDropdown"
-            label-hint="Export Data"
-            data="[[new oj.ArrayDataProvider(exportOptions, { keyAttributes: 'value' })]]"
-            on-oj-value-action="[[exportTableData]]">
-        </oj-select-single>
-    </div>
+      <!-- Export Button -->
+  <div style="margin-bottom: 15px;">
+    <button id="export-btn" data-bind="click: function(){ exportTableData({ detail: { value: 'json' } }) }">
+      Export JSON
+    </button>
+  </div>
 
     <!-- Tree View -->
     <div class="oj-flex-item oj-sm-12"

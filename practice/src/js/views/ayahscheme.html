@@ -1,96 +1,97 @@
 <h2 class="oj-helper-text-align-center">Counting Scheme Stats Per Ayah</h2>
 
 <style>
-    .right-align {
-        text-align: right !important;
-        direction: rtl;
-    }
-
-    .ayah-text-column {
-        min-width: 300px;
-        max-width: 300px;
-        word-wrap: break-word;
-        white-space: normal;
-        overflow-wrap: break-word;
-        overflow-y: auto;
-    }
-
-    .schemeColumn {
-        min-width: 90px;
-        word-wrap: break-word;
-        white-space: normal;
-        overflow-wrap: break-word;
-    }
-
-    .oj-table {
-        display: block;
-        max-width: 100%;
-        overflow-x: auto;
-    }
-
-    .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .green {
-        color: green;
-    }
-
-    .red {
-        color: red;
-    }
+  .right-align {
+    text-align: right !important;
+    direction: rtl;
+  }
+  .ayah-text-column {
+    min-width: 300px;
+    max-width: 300px;
+    word-wrap: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+  }
+  .schemeColumn {
+    min-width: 90px;
+    word-wrap: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  .oj-table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .green {
+    color: green;
+  }
+  .red {
+    color: red;
+  }
+  #export-btn {
+    border: 1px solid black;
+    padding: 10px;
+    border-radius: 2.5px;
+    width: 100%;
+    background-color: white;
+    color: black;
+    cursor: pointer;
+    transition: 0.5s ease-in-out;
+  }
+  #export-btn:hover {
+    background-color: black;
+    color: white;
+  }
 </style>
 
-<!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" style="width: 100%;">
+  <!-- Export Button -->
+  <div style="margin-bottom: 15px;">
+    <button id="export-btn" data-bind="click: function(){ exportTableData({ detail: { value: 'json' } }) }">
+      Export JSON
+    </button>
+  </div>
 
-    <!-- Export Dropdown using oj-select-single -->
-    <div style="margin-bottom: 15px;">
-        <oj-select-single
-            id="exportDropdown"
-            label-hint="Export Data"
-            data="[[new oj.ArrayDataProvider(exportOptions, { keyAttributes: 'value' })]]"
-            on-oj-value-action="[[exportTableData]]">
-        </oj-select-single>
-    </div>
+  <!-- Tree View -->
+  <div class="oj-flex-item oj-sm-12" style="width: 100%; max-width: 100%; overflow: hidden; padding-bottom: 15px;">
+    <oj-tree-view
+      id="treeview"
+      data="[[treeDataProvider]]"
+      selected="{{selected}}"
+      selection-mode="leafOnly"
+      on-selected-changed="[[selectedChanged]]"
+      aria-label="Tree View with JSON Data">
+      <template slot="itemTemplate" data-oj-as="row">
+        <span class="oj-treeview-item-icon"></span>
+        <span class="oj-treeview-item-text">
+          <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+        </span>
+      </template>
+    </oj-tree-view>
+  </div>
 
-    <!-- Tree View -->
-    <div class="oj-flex-item oj-sm-12"
-         style="width: 100%; max-width: 100%; overflow: hidden; padding-bottom: 15px;">
-        <oj-tree-view
-            id="treeview"
-            data="[[treeDataProvider]]"
-            selected="{{selected}}"
-            selection-mode="leafOnly"
-            on-selected-changed="[[selectedChanged]]"
-            aria-label="Tree View with JSON Data">
-            <template slot="itemTemplate" data-oj-as="row">
-                <span class="oj-treeview-item-icon"></span>
-                <span class="oj-treeview-item-text">
-                    <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
-                </span>
-            </template>
-        </oj-tree-view>
-    </div>
-
-    <!-- Table Wrapper -->
-    <div class="table-wrapper">
-        <oj-table class="oj-table"
-                  data="[[ayahDataProvider]]"
-                  columns="[[tableColumns]]"
-                  display="grid">
-            <template slot="cellTemplate" data-oj-as="cell">
-                <span :class="[[ cell.data === 'Counts' ? 'green' : (cell.data === `Doesn't Count` ? 'red' : '') ]]">
-                    <oj-bind-text value="[[cell.data]]"></oj-bind-text>
-                </span>
-            </template>
-            <template slot="noData">
-                <span style="white-space: nowrap; padding-left: 20px;">
-                    <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
-                </span>
-            </template>
-        </oj-table>
-    </div>
-
+  <!-- Table Wrapper -->
+  <div class="table-wrapper">
+    <oj-table class="oj-table" style="cursor: pointer !important;"
+              data="[[ayahDataProvider]]"
+              columns="[[tableColumns]]"
+              display="grid">
+      <template slot="cellTemplate" data-oj-as="cell">
+        <span data-bind="css: cell.data === 'Counts' ? 'green' : (cell.data === 'Doesn\'t Count' ? 'red' : '')">
+          <oj-bind-text value="[[cell.data]]"></oj-bind-text>
+        </span>
+      </template>
+      <template slot="noData">
+        <span style="white-space: nowrap; padding-left: 20px;">
+          <oj-bind-text value="[[isLoading() ? 'Loading Data...' : 'No data to display']]"></oj-bind-text>
+        </span>
+      </template>
+    </oj-table>
+  </div>
 </div>
