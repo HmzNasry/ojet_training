@@ -81,7 +81,8 @@
     <oj-table class="oj-table" style="cursor: pointer !important;"
               data="[[ayahDataProvider]]"
               columns="[[tableColumns]]"
-              display="grid">
+              display="grid"
+              on-oj-row-action="[[handleRowAction]]">
       <template slot="cellTemplate" data-oj-as="cell">
         <span data-bind="css: cell.data === 'Counts' ? 'green' : (cell.data === 'Doesn\'t Count' ? 'red' : '')">
           <oj-bind-text value="[[cell.data]]"></oj-bind-text>
