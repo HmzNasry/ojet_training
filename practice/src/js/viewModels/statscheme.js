@@ -18,6 +18,10 @@ define([
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
+        self.treeDataProvider = ko.observable();
+
+        let flattenedSchemes = [];
+        let parentChildMap = {};
 
         // Fetch API data and build schemeMap
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
@@ -27,6 +31,23 @@ define([
                 data.forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 });
+
+                let treeDataStats = buildTreeData(data);
+                flattenedSchemes = flattenTreeDFS(treeDataStats);
+                flattenedSchemes.forEach(node => {
+                    if (node.parentId !== null) {
+                        if (!parentChildMap[node.parentId]) {
+                            parentChildMap[node.parentId] = [];
+                        }
+                        parentChildMap[node.parentId].push(node.id);
+                    }
+                });
+
+                self.treeDataProvider(new ArrayTreeDataProvider(treeDataStats, {
+                    keyAttributes: "schemeId",
+                    childrenAttribute: "children"
+                }));
+
                 self.selected.add(flattenedSchemes.map(item => item.id));
                 updateTableData();
                 self.isLoading(false);
@@ -42,79 +63,40 @@ define([
         };
 
         // Tree structure definition
-        let treeDataStats = [
-            {
-                id: "0",
-                title: "الكل",
-                children: [
-                    {
-                        id: "1",
-                        title: "المدنى الأول",
-                        children: [
-                            { id: "8", title: "المدنى الأول، يزيد بن القعقاع" },
-                            {
-                                id: "9",
-                                title: "المدنى الأول، شيبة بن نصاح",
-                                children: [
-                                    { id: "12", title: "المدنى الأول، شيبة بن نصاح، بعد (نذير) - الملك" },
-                                    { id: "13", title: "المدنى الأول، شيبة بن نصاح، بدون عد (نذير) - الملك" }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        id: "2",
-                        title: "المدني الثاني",
-                        children: [
-                            { id: "10", title: "المدنى الثاني، يزيد بن القعقاع" },
-                            { id: "11", title: "المدنى الثاني، شيبة بن نصاح" }
-                        ]
-                    },
-                    {
-                        id: "3",
-                        title: "المكي",
-                        children: [{ id: "14", title: "المكي، بلا خلف" }]
-                    },
-                    { id: "4", title: "الكوفي" },
-                    {
-                        id: "5",
-                        title: "البصري",
-                        children: [{ id: "15", title: "البصري، بلا خلف" }]
-                    },
-                    { id: "6", title: "الدمشقي" },
-                    { id: "7", title: "الحمصي" }
-                ]
-            }
-        ];
+        function buildTreeData(data) {
+            let map = {};
+            data.forEach(item => {
+                map[item.schemeId] = { ...item, title: item.schemeName };
+            });
 
-        self.treeDataProvider = new ArrayTreeDataProvider(treeDataStats, {
-            keyAttributes: "id",
-            childrenAttribute: "children"
-        });
+            let roots = [];
+            data.forEach(item => {
+                if (item.parentSchemeId === null || item.parentSchemeId === undefined) {
+                    roots.push(map[item.schemeId]);
+                } else if (map[item.parentSchemeId]) {
+                    if (!map[item.parentSchemeId].children) {
+                        map[item.parentSchemeId].children = [];
+                    }
+                    map[item.parentSchemeId].children.push(map[item.schemeId]);
+                }
+            });
+
+            return roots;
+        }
 
         self.selected = new KeySet.ObservableKeySet();
 
         // Flatten tree using DFS and build parent-child map
-        function flattenTreeDFS(node, parentId = null, parentTitle = null) {
+        function flattenTreeDFS(nodes, parentId = null, parentTitle = null) {
             let result = [];
-            result.push({ id: node.id, title: node.title, parentId, parentTitle });
-            if (node.children) {
-                node.children.forEach(child => {
-                    result = result.concat(flattenTreeDFS(child, node.id, node.title));
-                });
-            }
+            nodes.forEach(node => {
+                result.push({ id: node.schemeId, title: node.title, parentId, parentTitle });
+                if (node.children) {
+                    result = result.concat(flattenTreeDFS(node.children, node.schemeId, node.title));
+                }
+            });
             return result;
         }
-        let flattenedSchemes = flattenTreeDFS(treeDataStats[0]);
-        let parentChildMap = {};
-        flattenedSchemes.forEach(node => {
-            if (node.parentId !== null) {
-                if (!parentChildMap[node.parentId]) {
-                    parentChildMap[node.parentId] = [];
-                }
-                parentChildMap[node.parentId].push(node.id);
-            }
-        });
 
         function getSelectedWithParents(selectedKeys) {
             let allSelected = new Set(selectedKeys);
@@ -190,7 +172,7 @@ define([
             const exportData = data.map(scheme => {
                 return {
                     ...scheme,
-                    parentSchemeName: (scheme.parentSchemeId >= 0) ? self.schemeMap[scheme.parentSchemeId] :  "N/A",
+                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? self.schemeMap[scheme.parentSchemeId] :  "N/A",
                     schemeId: undefined, // Remove schemeId
                     parentSchemeId: undefined // Remove parentSchemeId
                 };
