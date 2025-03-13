@@ -28,6 +28,7 @@ define([
 
                     self.flattenedSchemes = self.flattenTreeDFS(treeDataStats);
                     self.buildParentChildMap();
+                    return data;
                 })
                 .catch(error => {
                     console.error("Error fetching scheme data:", error);
@@ -81,12 +82,9 @@ define([
             });
         };
 
-        // Placeholder for Surah name mapping
-        self.getSurahName = function (surahId) {
-            const surahNames = [
-                // Placeholder for Surah names
-            ];
-            return surahNames[surahId - 1] || `Unknown`;
+        // Get scheme name by ID
+        self.getSchemeName = function (schemeId) {
+            return self.schemeMap[schemeId] || `Unknown`;
         };
 
         // Get selected keys with parents
@@ -105,6 +103,48 @@ define([
                 }
             });
             return Array.from(allSelected);
+        };
+
+        // Update table data based on selected keys
+        self.updateTableData = function (selectedKeys, fullSchemeArray) {
+            let selectedKeysArray = self.getSelectedWithParents(selectedKeys);
+            if (selectedKeysArray.length === 0) {
+                return { schemeArray: [], columns: [] };
+            }
+            let selectedSchemes = self.flattenedSchemes.filter(node => selectedKeysArray.includes(node.id));
+            let singleRow = {};
+            selectedSchemes.forEach(node => {
+                let schemeData = fullSchemeArray.find(s => s.schemeId === node.id);
+                if (schemeData) {
+                    singleRow[node.title] = schemeData.minCount === schemeData.maxCount ?
+                        schemeData.minCount : `${schemeData.minCount} - ${schemeData.maxCount}`;
+                } else {
+                    singleRow[node.title] = "N/A";
+                }
+            });
+            let schemeArray = [singleRow];
+            let columns = selectedSchemes.map(node => ({
+                headerText: node.title,
+                field: node.title,
+                sortable: "enabled",
+                className: "schemeColumn"
+            }));
+            return { schemeArray, columns };
+        };
+
+        // Export helper
+        self.exportJSON = function (data, filename = "data.json") {
+            try {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("Export failed:", error);
+            }
         };
     }
 

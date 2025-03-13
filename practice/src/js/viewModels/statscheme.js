@@ -13,24 +13,22 @@ define([
         let self = this;
 
         self.fullSchemeArray = ko.observableArray([]);
-        self.schemeMap = countingSchemesModel.schemeMap;
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
+        self.selected = new KeySet.ObservableKeySet();
 
         // Fetch API data for tables and export
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.fullSchemeArray(data);
-                data.forEach(scheme => {
-                    self.schemeMap[scheme.schemeId] = scheme.schemeName;
-                });
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
-                    self.selected.add(countingSchemesModel.flattenedSchemes.map(item => item.id));
+                    const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                    self.selected.add(initialSelection);
                     updateTableData();
                     self.isLoading(false);
                 });
@@ -41,40 +39,15 @@ define([
             });
 
         self.selectedChanged = function (event) {
-            let selectedKeysArray = [...event.detail.value.values()];
             updateTableData();
         };
 
-        self.selected = new KeySet.ObservableKeySet();
-
         function updateTableData() {
-            let selectedKeysArray = countingSchemesModel.getSelectedWithParents([...self.selected().values()]);
-            if (selectedKeysArray.length === 0) {
-                self.schemeArray([]);
-                self.tableColumns([]);
-                self.schemesDataProvider(new ArrayDataProvider([]));
-                return;
-            }
-            let selectedSchemes = countingSchemesModel.flattenedSchemes.filter(node => selectedKeysArray.includes(node.id));
-            let singleRow = {};
-            selectedSchemes.forEach(node => {
-                let schemeData = self.fullSchemeArray().find(s => s.schemeId === node.id);
-                if (schemeData) {
-                    singleRow[node.title] = schemeData.minCount === schemeData.maxCount ?
-                        schemeData.minCount : `${schemeData.minCount} - ${schemeData.maxCount}`;
-                } else {
-                    singleRow[node.title] = "N/A";
-                }
-            });
-            self.schemeArray([singleRow]);
-            self.schemesDataProvider(new ArrayDataProvider(self.schemeArray));
-            let columns = selectedSchemes.map(node => ({
-                headerText: node.title,
-                field: node.title,
-                sortable: "enabled",
-                className: "schemeColumn"
-            }));
+            let selectedKeysArray = [...self.selected().values()];
+            let { schemeArray, columns } = countingSchemesModel.updateTableData(selectedKeysArray, self.fullSchemeArray());
+            self.schemeArray(schemeArray);
             self.tableColumns(columns);
+            self.schemesDataProvider(new ArrayDataProvider(self.schemeArray));
         }
 
         // Export configuration 
@@ -86,22 +59,14 @@ define([
             const exportData = data.map(scheme => {
                 return {
                     ...scheme,
-                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? self.schemeMap[scheme.parentSchemeId] : "N/A",
+                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? countingSchemesModel.getSchemeName(scheme.parentSchemeId) : "N/A",
                     schemeId: undefined, // Remove schemeId
                     parentSchemeId: undefined // Remove parentSchemeId
                 };
             });
 
-            exportJSON(exportData);
+            countingSchemesModel.exportJSON(exportData, "scheme_stats.json");
         };
-
-        function exportJSON(data) {
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "scheme_stats.json";
-            link.click();
-        }
     }
 
     return StatsSchemesViewModel;
