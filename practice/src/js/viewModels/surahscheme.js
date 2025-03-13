@@ -77,7 +77,8 @@ define([
                 headerText: "Surah",
                 field: "surahId",
                 sortable: "enabled",
-                className: "surahColumn"
+                className: "surahColumn",
+                headerClassName: "surahColumnHeader"
             }];
 
             countingSchemesModel.flattenedSchemes.forEach(scheme => {
@@ -88,7 +89,8 @@ define([
                             headerText: schemeName,
                             field: schemeName,
                             sortable: "enabled",
-                            className: "schemeColumn"
+                            className: "schemeColumn",
+                            headerClassName: "schemeColumnHeader"
                         });
                     }
                 }

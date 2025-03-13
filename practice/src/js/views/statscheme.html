@@ -6,7 +6,7 @@
         direction: rtl;
         min-width: 90px;
         word-wrap: break-word;
-        white-space: normal; 
+        white-space: normal;
         overflow-wrap: break-word;
     }
 
@@ -30,6 +30,11 @@
         text-align: center !important;
     }
 
+    .schemeColumnHeader {
+        text-align: right !important;
+        direction: rtl !important;
+    }
+
     #export-btn {
         position: relative;
         border: 1px solid black;
@@ -38,61 +43,60 @@
         background-color: white;
         color: black;
         cursor: pointer;
-        overflow: hidden; 
-        transition: color 0.25s ease-in-out; 
-        z-index: 1; 
+        overflow: hidden;
+        transition: color 0.5s ease-in-out;
+        z-index: 1;
     }
 
-    #export-btn::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-        transition: left 0.35s ease-in-out; 
-        z-index: -1; 
+        #export-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            transition: left 0.5s ease-in-out;
+            z-index: -1;
+        }
+
+        #export-btn:hover::before {
+            left: 0;
+        }
+
+        #export-btn:hover {
+            color: white;
+        }
+
+
+
+
+    #container {
+        display: flex;
+        align-items: flex-end;
     }
-
-    #export-btn:hover::before {
-        left: 0;
-    }
-
-    #export-btn:hover {
-        color: white; 
-    }
-
-
-
-
-  #container {
-    display: flex;
-    align-items: flex-end;
-  }
 </style>
 
 <!-- Responsive Layout Container -->
 <div class="oj-flex oj-sm-flex-direction-column" id="container" style="width: 100%;">
 
-<!-- Export Button -->
-<div style="margin-bottom: 15px;">
-    <button id="export-btn" data-bind="click: function(){ exportTableData({ detail: { value: 'json' } }) }">
-      <span class="oj-ux-ico-export" style="margin-right: 8px;"></span> Export JSON
-    </button>
-  </div>
-  
+    <!-- Export Button -->
+    <div style="margin-bottom: 15px;">
+        <button id="export-btn" data-bind="click: function(){ exportTableData({ detail: { value: 'json' } }) }">
+            <span class="oj-ux-ico-export" style="margin-right: 8px;"></span> Export JSON
+        </button>
+    </div>
+
 
     <!-- Tree View -->
     <div class="oj-flex-item oj-sm-12"
          style="width: 100%; max-width: 100%; overflow: hidden; padding-bottom: 15px;">
-        <oj-tree-view
-            id="treeview"
-            data="[[treeDataProvider]]"
-            selected="{{selected}}"
-            selection-mode="leafOnly"
-            on-selected-changed="[[selectedChanged]]"
-            aria-label="Tree View with JSON Data">
+        <oj-tree-view id="treeview"
+                      data="[[treeDataProvider]]"
+                      selected="{{selected}}"
+                      selection-mode="leafOnly"
+                      on-selected-changed="[[selectedChanged]]"
+                      aria-label="Tree View with JSON Data">
             <template slot="itemTemplate" data-oj-as="row">
                 <span class="oj-treeview-item-icon"></span>
                 <span class="oj-treeview-item-text">

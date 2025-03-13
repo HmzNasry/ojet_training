@@ -71,8 +71,9 @@ define([
             let columns = selectedSchemes.map(node => ({
                 headerText: node.title,
                 field: node.title,
-                sortable: "enabled",
-                className: "schemeColumn"
+                sortable: "disabled",
+                className: "schemeColumn",
+                headerClassName: "schemeColumnHeader"
             }));
             self.tableColumns(columns);
         }
