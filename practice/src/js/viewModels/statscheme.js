@@ -13,8 +13,6 @@ define([
         const self = this;
 
         // Observable properties
-        self.apiData = ko.observableArray([]);
-        self.schemeMap = countingSchemesModel.schemeMap;
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
@@ -22,35 +20,22 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initialize data
-        fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`API responded with status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                self.apiData(data);
-
-                // Update scheme map with fetched data
-                data.forEach(scheme => {
-                    self.schemeMap[scheme.schemeId] = scheme.schemeName;
-                });
-
-                countingSchemesModel.fetchSchemeStats().then(() => {
-                    self.isLoading(false);
-                    setTimeout(() => {
-                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                        self.selected.add(initialSelection);
-                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                    }, 1);
-                });
-            })
-            .catch(error => {
-                console.error("Error fetching scheme data:", error);
-                self.isLoading(false);
-            });
+        // Initialize data - use the model's fetch instead of duplicating the call
+        countingSchemesModel.fetchSchemeStats().then(() => {
+            // Get the data from the model instead of making our own API call
+            self.apiData = ko.observableArray(countingSchemesModel.rawSchemeStats);
+            self.schemeMap = countingSchemesModel.schemeMap;
+            
+            self.isLoading(false);
+            setTimeout(() => {
+                const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                self.selected.add(initialSelection);
+                self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+            }, 1);
+        }).catch(error => {
+            console.error("Error fetching scheme data:", error);
+            self.isLoading(false);
+        });
 
         // Tree selection handler
         self.selectedChanged = function (event) {

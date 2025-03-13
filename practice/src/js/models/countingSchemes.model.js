@@ -26,6 +26,7 @@ define([
                 })
                 .then(data => {
                     self.processSchemeData(data);
+                    self.rawSchemeStats = data;
                     
                     // Configure tree data provider
                     const treeDataStats = self.buildTreeData(data);
