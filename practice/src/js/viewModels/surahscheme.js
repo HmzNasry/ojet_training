@@ -7,16 +7,14 @@ define([
     "ojs/ojknockout-keyset",
     "ojs/ojtreeview",
     "ojs/ojtable",
-    "ojs/ojselectsingle",
-    "text!configuration/navigationData.json"
-], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet, navData) {
+    "ojs/ojselectsingle"
+], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet) {
 
     function SurahSchemesViewModel() {
         const self = this;
 
         // Observable properties
         self.fullSurahArray = ko.observable({});
-        self.schemeMap = countingSchemesModel.schemeMap;
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
@@ -29,11 +27,6 @@ define([
             .then(response => response.json())
             .then(data => {
                 self.fullSurahArray(data);
-
-                // Build scheme map
-                Object.values(data).flat().forEach(scheme => {
-                    self.schemeMap[scheme.schemeId] = scheme.schemeName;
-                });
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
                     const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
@@ -67,32 +60,35 @@ define([
                         surahId: `${surahId} (${countingSchemesModel.getSurahName(surahId)})`
                     };
 
+                    // Use scheme names from countingSchemesModel to ensure consistency
                     surahSchemes.forEach(scheme => {
-                        row[`scheme_${scheme.schemeId}`] =
-                            scheme.minCount !== scheme.maxCount
-                                ? `${scheme.minCount} - ${scheme.maxCount}`
-                                : scheme.maxCount;
+                        const schemeName = countingSchemesModel.getSchemeName(scheme.schemeId);
+                        row[schemeName] = scheme.minCount !== scheme.maxCount
+                            ? `${scheme.minCount} - ${scheme.maxCount}`
+                            : scheme.maxCount;
                     });
 
                     return row;
                 })
                 .filter(Boolean);
 
-            // Generate columns based on selected scheme IDs
+            // Generate columns based on selected scheme IDs in DFS order
             const columns = [{
                 headerText: "Surah",
                 field: "surahId",
                 sortable: "enabled"
             }];
 
-            selectedKeys.forEach(schemeId => {
-                const schemeName = self.schemeMap[schemeId];
-                if (schemeName) {
-                    columns.push({
-                        headerText: schemeName,
-                        field: `scheme_${schemeId}`,
-                        sortable: "enabled"
-                    });
+            countingSchemesModel.flattenedSchemes.forEach(scheme => {
+                if (selectedKeys.includes(scheme.id)) {
+                    const schemeName = countingSchemesModel.getSchemeName(scheme.id);
+                    if (schemeName) {
+                        columns.push({
+                            headerText: schemeName,
+                            field: schemeName,
+                            sortable: "enabled"
+                        });
+                    }
                 }
             });
 
@@ -105,10 +101,34 @@ define([
         };
 
         // Export functionality
-        self.exportOptions = [{ label: "Export as JSON", value: "json" }];
-        self.exportTableData = function (event) {
-            const data = ko.toJS(self.surahArray());
-            countingSchemesModel.exportJSON(data, "surah_schemes.json");
+        self.exportTableData = function () {
+            const rawData = self.fullSurahArray();
+            const exportReady = {};
+
+            // Process each surah
+            Object.keys(rawData).forEach(surahId => {
+                const surahName = countingSchemesModel.getSurahName(surahId);
+                const surahKey = `${surahId} - ${surahName}`;
+
+                // Map each scheme in the surah
+                exportReady[surahKey] = rawData[surahId].map(scheme => {
+                    let mappedScheme = {
+                        schemeName: scheme.schemeName,
+                        minCount: scheme.minCount,
+                        maxCount: scheme.maxCount
+                    };
+
+                    // Add parent scheme name if it exists
+                    if (scheme.parentSchemeId !== null && scheme.parentSchemeId !== undefined) {
+                        mappedScheme.parentSchemeName = countingSchemesModel.getSchemeName(scheme.parentSchemeId);
+                    }
+
+                    return mappedScheme;
+                });
+            });
+
+            // Export the transformed data
+            countingSchemesModel.exportJSON(exportReady, "surah_schemes.json");
         };
     }
 

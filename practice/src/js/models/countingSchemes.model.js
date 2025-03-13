@@ -92,6 +92,10 @@ define([
             }
         };
 
+        // Get scheme name by ID
+        self.getSchemeName = function (schemeId) {
+            return self.schemeMap[schemeId] || "Unknown";
+        };
 
         // Get selected keys with parents
         self.getSelectedWithParents = function (selectedKeys) {
