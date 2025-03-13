@@ -7,13 +7,12 @@ define([
     function CountingSchemesModel() {
         const self = this;
 
-        // Data structures for scheme management
-        self.schemeMap = {};        
-        self.nodeMap = {};          
+        self.schemeMap = {};
+        self.nodeMap = {};
         self.treeDataProvider = ko.observable();
         self.flattenedSchemes = [];
         self.parentChildMap = {};
-        self.surahData = null;     
+        self.surahData = null;
 
         // Fetch and initialize scheme data
         self.fetchSchemeStats = function () {
@@ -27,7 +26,7 @@ define([
                 .then(data => {
                     self.processSchemeData(data);
                     self.rawSchemeStats = data;
-                    
+
                     // Configure tree data provider
                     const treeDataStats = self.buildTreeData(data);
                     self.treeDataProvider(new ArrayTreeDataProvider(treeDataStats, {
@@ -41,21 +40,21 @@ define([
         };
 
         // Process scheme data
-        self.processSchemeData = function(data) {
+        self.processSchemeData = function (data) {
 
             self.schemeMap = {};
             self.nodeMap = {};
             self.parentChildMap = {};
-            
+
             // Build lookup maps
             data.forEach(scheme => {
                 self.schemeMap[scheme.schemeId] = scheme.schemeName;
-                self.nodeMap[scheme.schemeId] = { 
-                    id: scheme.schemeId, 
-                    title: scheme.schemeName, 
+                self.nodeMap[scheme.schemeId] = {
+                    id: scheme.schemeId,
+                    title: scheme.schemeName,
                     parentId: scheme.parentSchemeId
                 };
-                
+
                 // Build parent-child relationships
                 if (scheme.parentSchemeId !== null && scheme.parentSchemeId !== undefined) {
                     if (!self.parentChildMap[scheme.parentSchemeId]) {
@@ -64,7 +63,7 @@ define([
                     self.parentChildMap[scheme.parentSchemeId].push(scheme.schemeId);
                 }
             });
-            
+
             self.flattenedSchemes = Object.values(self.nodeMap);
         };
 
@@ -116,7 +115,7 @@ define([
             selectedKeys.forEach(key => {
                 let node = self.nodeMap[key];
                 if (!node) return;
-                
+
                 let parentId = node.parentId;
                 while (parentId !== null && parentId !== undefined) {
                     allSelected.add(parentId);
@@ -135,7 +134,7 @@ define([
             return Array.from(allSelected);
         };
 
-        // Export data to downloadable JSON file
+        // Export data
         self.exportJSON = function (data, filename = "data.json") {
             try {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

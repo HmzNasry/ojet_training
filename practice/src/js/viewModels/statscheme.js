@@ -20,12 +20,12 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initialize data - use the model's fetch instead of duplicating the call
+        // Initialize data - use the model's fetch
         countingSchemesModel.fetchSchemeStats().then(() => {
-            // Get the data from the model instead of making our own API call
+            // Get the data from the model
             self.apiData = ko.observableArray(countingSchemesModel.rawSchemeStats);
             self.schemeMap = countingSchemesModel.schemeMap;
-            
+
             self.isLoading(false);
             setTimeout(() => {
                 const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
