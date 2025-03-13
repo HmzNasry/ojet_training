@@ -13,24 +13,19 @@ define([
     function AyahSchemesViewModel() {
         const self = this;
 
-        // Single source of truth for raw data
+        // Observable properties
         self.apiData = ko.observableArray([]);
-
-        // Derived/processed data for display
         self.ayahArray = ko.observableArray([]);
         self.ayahDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
-
-        // UI state
         self.isLoading = ko.observable(true);
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initial data fetch - get our single source of truth
+        // Initialize data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
             .then(response => response.json())
             .then(data => {
-                // Store raw data in our single source of truth
                 self.apiData(data);
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
@@ -45,53 +40,51 @@ define([
                 self.isLoading(false);
             });
 
-        // Event handlers
+        // Tree selection handler
         self.selectedChanged = function (event) {
             const selectedKeys = [...event.detail.value.values()];
             self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        // Core filtering logic - transform raw data for table display
-        self.filterData = function (selectedKeys) {
-            if (selectedKeys.length === 0) {
-                self.ayahArray([]);
-                self.tableColumns([]);
-                self.ayahDataProvider(new ArrayDataProvider([]));
-                return;
-            }
-
-            // Start with raw data and transform for display
-            const displayData = self.apiData().map(entry => {
+        // Data transformation for display
+        self.createDisplayData = function (selectedKeys) {
+            return self.apiData().map(entry => {
                 const row = {
                     seqNo: entry.seqNo,
                     surahNo: `${entry.surahNo} (${countingSchemesModel.getSurahName(entry.surahNo)})`,
                     ayahNoWithinSurah: entry.ayahNoWithinSurah,
-                    ayahText: entry.ayah
+                    ayahText: entry.ayah,
+                    ayahSerialNo: entry.ayahSerialNo
                 };
 
-                // Add scheme columns based on selected schemes
                 selectedKeys.forEach(schemeId => {
                     const schemeName = countingSchemesModel.getSchemeName(schemeId);
                     if (schemeName) {
-                        row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" : entry.schemesThatHaveKhulf.includes(schemeId) ? "Has Khulf" : "Doesn't Count";
+                        row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" :
+                            entry.schemesThatHaveKhulf.includes(schemeId) ? "Has Khulf" :
+                                "Doesn't Count";
                     }
                 });
 
                 return row;
             });
+        };
 
-            // Generate columns for display
-            const columns = [
+        // Table column configuration
+        self.createTableColumns = function (selectedKeys) {
+            const baseColumns = [
                 { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn", headerClassName: "surahColumnHeader" },
-                { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled", className: "centered" },
-                { headerText: "Ayah Text", field: "ayahText", className: "ayah-text-column centered" }
+                { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled", className: "oj-align-text-center" },
+                { headerText: "Ayah Text", field: "ayahText", className: "ayah-text-column" },
+                { headerText: "Ayah Serial No", field: "ayahSerialNo", className: "oj-align-text-center" }
             ];
 
+            const schemeColumns = [];
             countingSchemesModel.flattenedSchemes.forEach(scheme => {
                 if (selectedKeys.includes(scheme.id)) {
                     const schemeName = countingSchemesModel.getSchemeName(scheme.id);
                     if (schemeName) {
-                        columns.push({
+                        schemeColumns.push({
                             headerText: schemeName,
                             field: schemeName,
                             sortable: "enabled",
@@ -102,7 +95,21 @@ define([
                 }
             });
 
-            // Update display data
+            return [...baseColumns, ...schemeColumns];
+        };
+
+        // Filter and update table data
+        self.filterData = function (selectedKeys) {
+            if (selectedKeys.length === 0) {
+                self.ayahArray([]);
+                self.tableColumns([]);
+                self.ayahDataProvider(new ArrayDataProvider([]));
+                return;
+            }
+
+            const displayData = self.createDisplayData(selectedKeys);
+            const columns = self.createTableColumns(selectedKeys);
+
             self.tableColumns(columns);
             self.ayahArray(displayData);
             self.ayahDataProvider(new ArrayDataProvider(displayData, {
@@ -110,11 +117,9 @@ define([
             }));
         };
 
-        // Row action handler - use raw data to get navigation info
+        // Row click navigation
         self.handleRowAction = function (event) {
             const rowKey = event.detail.context.key;
-
-            // Find the corresponding entry in our raw data
             const entry = self.apiData().find(item => item.seqNo === rowKey);
 
             if (entry) {
@@ -130,6 +135,7 @@ define([
             }
         };
 
+        // Export functionality
         self.exportTableData = function (event) {
             const exportData = self.apiData().map(entry => {
                 return {
