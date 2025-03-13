@@ -13,7 +13,6 @@ define([
     function AyahSchemesViewModel() {
         const self = this;
 
-        // Observable properties
         self.apiData = ko.observableArray([]);
         self.ayahArray = ko.observableArray([]);
         self.ayahDataProvider = ko.observable();
@@ -22,13 +21,14 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initialize data with sessionStorage caching
+        // Cache configuration
         self.loadAyahData = function () {
             self.isLoading(true);
 
             const cachedData = sessionStorage.getItem('ayah_schemes_data');
 
             if (cachedData) {
+                console.log("Using cached ayah data");
                 const data = JSON.parse(cachedData);
                 self.apiData(data);
 
@@ -43,11 +43,13 @@ define([
                 return;
             }
 
+            // API fetching configuration
 
+            console.log("Fetching fresh ayah data");
             fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
                 .then(response => response.json())
                 .then(data => {
-
+                    console.log("Caching ayah data");
                     sessionStorage.setItem('ayah_schemes_data', JSON.stringify(data));
 
                     self.apiData(data);
@@ -65,13 +67,6 @@ define([
                     console.error("Error fetching data:", error);
                     self.isLoading(false);
                 });
-        };
-
-        // Force reload of data (can be called from console)
-        self.refreshData = function () {
-            console.log("Refreshing ayah data");
-            sessionStorage.removeItem('ayah_schemes_data');
-            self.loadAyahData();
         };
 
         // Initialize on load

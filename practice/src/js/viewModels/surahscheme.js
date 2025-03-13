@@ -13,7 +13,6 @@ define([
     function SurahSchemesViewModel() {
         const self = this;
 
-        // Observable properties
         self.apiData = ko.observable({});
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
@@ -42,6 +41,8 @@ define([
                 });
                 return;
             }
+
+            // API fetch configuration
 
             fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
                 .then(response => {
@@ -153,7 +154,7 @@ define([
             }));
         };
 
-        // Export data as JSON
+        // Export configuration
         self.exportTableData = function () {
             const rawData = self.apiData();
             const exportReady = {};

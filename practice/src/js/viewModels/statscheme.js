@@ -12,7 +12,6 @@ define([
     function StatsSchemesViewModel() {
         const self = this;
 
-        // Observable properties
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
@@ -20,8 +19,8 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
+        // Load data from model (cache configuration is in the model itself)
         countingSchemesModel.fetchSchemeStats().then(() => {
-            // Get the data from the model
             self.apiData = ko.observableArray(countingSchemesModel.rawSchemeStats);
             self.schemeMap = countingSchemesModel.schemeMap;
 
@@ -48,7 +47,6 @@ define([
                 return [];
             }
 
-            // Create a single row with all selected schemes
             const singleRow = {};
 
             selectedSchemes.forEach(node => {
@@ -84,16 +82,13 @@ define([
                 return;
             }
 
-            // Get selected scheme nodes
             const selectedSchemes = countingSchemesModel.flattenedSchemes.filter(
                 node => selectedKeys.includes(node.id)
             );
 
-            // Create display data and columns
             const displayData = self.createDisplayData(selectedSchemes);
             const columns = self.createTableColumns(selectedSchemes);
 
-            // Update observables
             self.tableColumns(columns);
             self.schemeArray(displayData);
             self.schemesDataProvider(new ArrayDataProvider(displayData));
