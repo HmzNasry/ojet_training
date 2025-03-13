@@ -22,10 +22,14 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initialize data
-        fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
-            .then(response => response.json())
-            .then(data => {
+        // Initialize data with sessionStorage caching
+        self.loadAyahData = function () {
+            self.isLoading(true);
+
+            const cachedData = sessionStorage.getItem('ayah_schemes_data');
+
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
                 self.apiData(data);
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
@@ -36,11 +40,42 @@ define([
                         self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
                     }, 1);
                 });
-            })
-            .catch(error => {
-                console.error("Error fetching data:", error);
-                self.isLoading(false);
-            });
+                return;
+            }
+
+
+            fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
+                .then(response => response.json())
+                .then(data => {
+
+                    sessionStorage.setItem('ayah_schemes_data', JSON.stringify(data));
+
+                    self.apiData(data);
+
+                    countingSchemesModel.fetchSchemeStats().then(() => {
+                        self.isLoading(false);
+                        setTimeout(() => {
+                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                            self.selected.add(initialSelection);
+                            self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                        }, 1);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    self.isLoading(false);
+                });
+        };
+
+        // Force reload of data (can be called from console)
+        self.refreshData = function () {
+            console.log("Refreshing ayah data");
+            sessionStorage.removeItem('ayah_schemes_data');
+            self.loadAyahData();
+        };
+
+        // Initialize on load
+        self.loadAyahData();
 
         // Tree selection handler
         self.selectedChanged = function (event) {
@@ -63,7 +98,7 @@ define([
                     const schemeName = countingSchemesModel.getSchemeName(schemeId);
                     if (schemeName) {
                         row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" :
-                            entry.schemesThatHaveKhulf.includes(schemeId) ? "Has Khulf" :
+                            entry.schemesThatHaveKhulf?.includes(schemeId) ? "Has Khulf" :
                                 "Doesn't Count";
                     }
                 });
@@ -136,7 +171,6 @@ define([
                 console.error('No entry found for key:', rowKey);
             }
         };
-
 
         // Export functionality
         self.exportTableData = function (event) {

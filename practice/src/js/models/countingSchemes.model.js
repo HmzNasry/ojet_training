@@ -13,9 +13,28 @@ define([
         self.flattenedSchemes = [];
         self.parentChildMap = {};
         self.surahData = null;
+        self.rawSchemeStats = [];
 
-        // Fetch and initialize scheme data
         self.fetchSchemeStats = function () {
+            const cachedData = sessionStorage.getItem('scheme_stats_data');
+
+            if (cachedData) {
+
+                const data = JSON.parse(cachedData);
+                self.processSchemeData(data);
+                self.rawSchemeStats = data;
+
+                if (!self.treeDataProvider()) {
+                    const treeDataStats = self.buildTreeData(data);
+                    self.treeDataProvider(new ArrayTreeDataProvider(treeDataStats, {
+                        keyAttributes: "schemeId",
+                        childrenAttribute: "children"
+                    }));
+                }
+
+                return Promise.resolve(self.rawSchemeStats);
+            }
+
             return fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
                 .then(response => {
                     if (!response.ok) {
@@ -24,29 +43,30 @@ define([
                     return response.json();
                 })
                 .then(data => {
+                    sessionStorage.setItem('scheme_stats_data', JSON.stringify(data));
+
                     self.processSchemeData(data);
                     self.rawSchemeStats = data;
 
-                    // Configure tree data provider
                     const treeDataStats = self.buildTreeData(data);
                     self.treeDataProvider(new ArrayTreeDataProvider(treeDataStats, {
                         keyAttributes: "schemeId",
                         childrenAttribute: "children"
                     }));
+
+                    return self.rawSchemeStats;
                 })
                 .catch(error => {
                     console.error("Error fetching scheme data:", error);
+                    throw error;
                 });
         };
 
-        // Process scheme data
         self.processSchemeData = function (data) {
-
             self.schemeMap = {};
             self.nodeMap = {};
             self.parentChildMap = {};
 
-            // Build lookup maps
             data.forEach(scheme => {
                 self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 self.nodeMap[scheme.schemeId] = {
@@ -55,7 +75,6 @@ define([
                     parentId: scheme.parentSchemeId
                 };
 
-                // Build parent-child relationships
                 if (scheme.parentSchemeId !== null && scheme.parentSchemeId !== undefined) {
                     if (!self.parentChildMap[scheme.parentSchemeId]) {
                         self.parentChildMap[scheme.parentSchemeId] = [];
@@ -67,7 +86,6 @@ define([
             self.flattenedSchemes = Object.values(self.nodeMap);
         };
 
-        // Create hierarchical tree structure
         self.buildTreeData = function (data) {
             const map = {};
             data.forEach(item => {
@@ -89,7 +107,6 @@ define([
             return roots;
         };
 
-        // Retrieve surah name by ID
         self.getSurahName = function (surahId) {
             try {
                 if (!self.surahData) {
@@ -102,16 +119,13 @@ define([
             }
         };
 
-        // Retrieve scheme name by ID
         self.getSchemeName = function (schemeId) {
             return self.schemeMap[schemeId] || "Unknown";
         };
 
-        // Build complete selection set with parent-child relationships
         self.getSelectedWithParents = function (selectedKeys) {
             const allSelected = new Set(selectedKeys);
 
-            // Add parent nodes
             selectedKeys.forEach(key => {
                 let node = self.nodeMap[key];
                 if (!node) return;
@@ -124,7 +138,6 @@ define([
                 }
             });
 
-            // Add child nodes
             selectedKeys.forEach(key => {
                 if (self.parentChildMap[key]) {
                     self.parentChildMap[key].forEach(childId => allSelected.add(childId));
@@ -134,7 +147,6 @@ define([
             return Array.from(allSelected);
         };
 
-        // Export data
         self.exportJSON = function (data, filename = "data.json") {
             try {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
