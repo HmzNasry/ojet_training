@@ -73,10 +73,10 @@ define([
         // Table column configuration
         self.createTableColumns = function (selectedKeys) {
             const baseColumns = [
-                { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn", headerClassName: "surahColumnHeader" },
-                { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled", className: "oj-align-text-center" },
-                { headerText: "Ayah Text", field: "ayahText", className: "ayah-text-column" },
-                { headerText: "Ayah Serial No", field: "ayahSerialNo", className: "oj-align-text-center" }
+                { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn"},
+                { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled", className: "centered" },
+                { headerText: "Ayah Text", field: "ayahText", className: "ayah-text-column right-align" },
+                { headerText: "Ayah Serial No", field: "ayahSerialNo", className: "centered" }
             ];
 
             const schemeColumns = [];
@@ -89,7 +89,7 @@ define([
                             field: schemeName,
                             sortable: "enabled",
                             className: "schemeColumn",
-                            headerClassName: "schemeColumnHeader"
+                            headerClassName: "schemeColumnHeader right-align"
                         });
                     }
                 }
@@ -140,15 +140,11 @@ define([
             const exportData = self.apiData().map(entry => {
                 return {
                     ...entry,
-                    surahName: countingSchemesModel.getSurahName(entry.surahNo),
-                    schemesThatCount: entry.schemesThatCount.map(schemeId => ({
-                        id: schemeId,
-                        name: countingSchemesModel.getSchemeName(schemeId)
-                    })),
-                    schemesThatDoNotCount: entry.schemesThatDoNotCount.map(schemeId => ({
-                        id: schemeId,
-                        name: countingSchemesModel.getSchemeName(schemeId)
-                    }))
+                    surahNo: `${countingSchemesModel.getSurahName(entry.surahNo)}, ${entry.surahNo}`,
+                    schemesThatCount: entry.schemesThatCount.map(id => countingSchemesModel.getSchemeName(id)),
+                    schemesThatDoNotCount: entry.schemesThatDoNotCount.map(id => countingSchemesModel.getSchemeName(id)),
+                    schemesThatHaveKhulf: entry.schemesThatHaveKhulf ? 
+                        entry.schemesThatHaveKhulf.map(id => countingSchemesModel.getSchemeName(id)) : []
                 };
             });
 
