@@ -15,12 +15,12 @@ define([
 
         // Single source of truth for raw data
         self.apiData = ko.observableArray([]);
-        
+
         // Derived/processed data for display
         self.ayahArray = ko.observableArray([]);
         self.ayahDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
-        
+
         // UI state
         self.isLoading = ko.observable(true);
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
@@ -59,9 +59,9 @@ define([
                 self.ayahDataProvider(new ArrayDataProvider([]));
                 return;
             }
-            
+
             // Start with raw data and transform for display
-            const displayData = self.fullAyahArray().map(entry => {
+            const displayData = self.apiData().map(entry => {
                 const row = {
                     seqNo: entry.seqNo,
                     surahNo: `${entry.surahNo} (${countingSchemesModel.getSurahName(entry.surahNo)})`,
@@ -113,17 +113,17 @@ define([
         // Row action handler - use raw data to get navigation info
         self.handleRowAction = function (event) {
             const rowKey = event.detail.context.key;
-            
+
             // Find the corresponding entry in our raw data
-            const entry = self.fullAyahArray().find(item => item.seqNo === rowKey);
-        
+            const entry = self.apiData().find(item => item.seqNo === rowKey);
+
             if (entry) {
                 const url = new URL('https://hawsabah.org/');
                 url.searchParams.set('ojr', 'dashboard');
                 url.searchParams.set('mushaf', '1');
-                url.searchParams.set('surah', entry.surahNo); 
+                url.searchParams.set('surah', entry.surahNo);
                 url.searchParams.set('ayah', entry.ayahNoWithinSurah);
-                
+
                 window.location.href = url.toString();
             } else {
                 console.error('No entry found for key:', rowKey);
@@ -145,7 +145,7 @@ define([
                     }))
                 };
             });
-            
+
             countingSchemesModel.exportJSON(exportData, "ayah_schemes.json");
         };
     }
