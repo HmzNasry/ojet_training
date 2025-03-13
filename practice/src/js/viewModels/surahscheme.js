@@ -88,7 +88,7 @@ define([
                             headerText: schemeName,
                             field: schemeName,
                             sortable: "enabled",
-                            className: "schemeColumn" 
+                            className: "schemeColumn"
                         });
                     }
                 }
