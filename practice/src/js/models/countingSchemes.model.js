@@ -110,7 +110,7 @@ define([
         // Get selected keys with their parents and children
         self.getSelectedWithParents = function (selectedKeys) {
             const allSelected = new Set(selectedKeys);
-            
+
             // Add all parents of selected nodes
             selectedKeys.forEach(key => {
                 let parent = self.flattenedSchemes.find(node => node.id === key)?.parentId;
@@ -119,14 +119,14 @@ define([
                     parent = self.flattenedSchemes.find(node => node.id === parent)?.parentId || null;
                 }
             });
-            
+
             // Add all children of selected nodes
             selectedKeys.forEach(key => {
                 if (self.parentChildMap[key]) {
                     self.parentChildMap[key].forEach(childId => allSelected.add(childId));
                 }
             });
-            
+
             return Array.from(allSelected);
         };
 
