@@ -24,21 +24,12 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Export functionality
-        self.exportValue = ko.observable(null);
-        self.exportOptions = [{ label: "Export as JSON", value: "json" }];
-        self.exportTableData = function(event) {
-            const data = ko.toJS(self.surahArray());
-            countingSchemesModel.exportJSON(data, "surah_schemes.json");
-            self.exportValue(null);
-        };
-
         // Initial data fetch
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
             .then(response => response.json())
             .then(data => {
                 self.fullSurahArray(data);
-                
+
                 // Build scheme map
                 Object.values(data).flat().forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
@@ -57,16 +48,16 @@ define([
             });
 
         // Event handlers
-        self.selectedChanged = function(event) {
+        self.selectedChanged = function (event) {
             const selectedKeys = [...event.detail.value.values()];
             self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
         // Core filtering logic
-        self.filterData = function(selectedKeys) {
+        self.filterData = function (selectedKeys) {
             const filteredData = Object.entries(self.fullSurahArray())
                 .map(([surahId, schemes]) => {
-                    const surahSchemes = schemes.filter(scheme => 
+                    const surahSchemes = schemes.filter(scheme =>
                         selectedKeys.includes(scheme.schemeId)
                     );
 
@@ -76,11 +67,10 @@ define([
                         surahId: `${surahId} (${countingSchemesModel.getSurahName(surahId)})`
                     };
 
-                    // Use scheme IDs as keys to prevent name collisions
                     surahSchemes.forEach(scheme => {
-                        row[`scheme_${scheme.schemeId}`] = 
-                            scheme.minCount !== scheme.maxCount 
-                                ? `${scheme.minCount} - ${scheme.maxCount}` 
+                        row[`scheme_${scheme.schemeId}`] =
+                            scheme.minCount !== scheme.maxCount
+                                ? `${scheme.minCount} - ${scheme.maxCount}`
                                 : scheme.maxCount;
                     });
 
@@ -112,6 +102,13 @@ define([
             self.schemesDataProvider(new ArrayDataProvider(filteredData, {
                 keyAttributes: "surahId"
             }));
+        };
+
+        // Export functionality
+        self.exportOptions = [{ label: "Export as JSON", value: "json" }];
+        self.exportTableData = function (event) {
+            const data = ko.toJS(self.surahArray());
+            countingSchemesModel.exportJSON(data, "surah_schemes.json");
         };
     }
 

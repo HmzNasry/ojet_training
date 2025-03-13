@@ -1,7 +1,8 @@
 define([
     "knockout",
-    "ojs/ojarraytreedataprovider"
-], function (ko, ArrayTreeDataProvider) {
+    "ojs/ojarraytreedataprovider",
+    "text!configuration/surahNames.json"
+], function (ko, ArrayTreeDataProvider, surahNames) {
 
     function CountingSchemesModel() {
         let self = this;
@@ -81,13 +82,16 @@ define([
             });
         };
 
-        // Placeholder for Surah name mapping
         self.getSurahName = function (surahId) {
-            const surahNames = [
-                // Placeholder for Surah names
-            ];
-            return surahNames[surahId - 1] || `Unknown`;
+            try {
+                const surahData = JSON.parse(surahNames);
+                return surahData[surahId] || "Unknown";
+            } catch (error) {
+                console.error("Error parsing surah names:", error);
+                return "Unknown";
+            }
         };
+
 
         // Get selected keys with parents
         self.getSelectedWithParents = function (selectedKeys) {
@@ -105,6 +109,21 @@ define([
                 }
             });
             return Array.from(allSelected);
+        };
+
+        // Export helper
+        self.exportJSON = function (data, filename = "data.json") {
+            try {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("Export failed:", error);
+            }
         };
     }
 
