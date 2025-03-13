@@ -20,7 +20,6 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initialize data - use the model's fetch
         countingSchemesModel.fetchSchemeStats().then(() => {
             // Get the data from the model
             self.apiData = ko.observableArray(countingSchemesModel.rawSchemeStats);

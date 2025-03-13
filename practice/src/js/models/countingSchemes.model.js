@@ -15,11 +15,12 @@ define([
         self.surahData = null;
         self.rawSchemeStats = [];
 
+        //  Cache configuration
         self.fetchSchemeStats = function () {
             const cachedData = sessionStorage.getItem('scheme_stats_data');
 
             if (cachedData) {
-
+                console.log("Using cached scheme data");
                 const data = JSON.parse(cachedData);
                 self.processSchemeData(data);
                 self.rawSchemeStats = data;
@@ -35,6 +36,8 @@ define([
                 return Promise.resolve(self.rawSchemeStats);
             }
 
+            // API fetcihng configuration
+            console.log("Fetching fresh scheme data");
             return fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
                 .then(response => {
                     if (!response.ok) {
@@ -43,6 +46,7 @@ define([
                     return response.json();
                 })
                 .then(data => {
+                    console.log("Caching scheme data");
                     sessionStorage.setItem('scheme_stats_data', JSON.stringify(data));
 
                     self.processSchemeData(data);
@@ -62,6 +66,8 @@ define([
                 });
         };
 
+
+        // Process raw scheme data into internal structures
         self.processSchemeData = function (data) {
             self.schemeMap = {};
             self.nodeMap = {};
@@ -86,6 +92,7 @@ define([
             self.flattenedSchemes = Object.values(self.nodeMap);
         };
 
+        // Build hierarchical tree structure
         self.buildTreeData = function (data) {
             const map = {};
             data.forEach(item => {
@@ -107,6 +114,7 @@ define([
             return roots;
         };
 
+        // Get surah name by ID
         self.getSurahName = function (surahId) {
             try {
                 if (!self.surahData) {
@@ -119,10 +127,12 @@ define([
             }
         };
 
+        // Get scheme name by ID
         self.getSchemeName = function (schemeId) {
             return self.schemeMap[schemeId] || "Unknown";
         };
 
+        // Get selected schemes with parents and children
         self.getSelectedWithParents = function (selectedKeys) {
             const allSelected = new Set(selectedKeys);
 
@@ -147,6 +157,7 @@ define([
             return Array.from(allSelected);
         };
 
+        // Export data
         self.exportJSON = function (data, filename = "data.json") {
             try {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
