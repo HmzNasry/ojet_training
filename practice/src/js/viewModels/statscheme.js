@@ -10,29 +10,41 @@ define([
 ], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, KeySet) {
 
     function StatsSchemesViewModel() {
-        let self = this;
+        const self = this;
 
-        self.fullSchemeArray = ko.observableArray([]);
+        // Observable properties
+        self.apiData = ko.observableArray([]);
         self.schemeMap = countingSchemesModel.schemeMap;
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
+        self.selected = new KeySet.ObservableKeySet();
 
-        // Fetch API data for tables and export
+        // Initialize data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                self.fullSchemeArray(data);
+                self.apiData(data);
+
+                // Update scheme map with fetched data
                 data.forEach(scheme => {
                     self.schemeMap[scheme.schemeId] = scheme.schemeName;
                 });
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
-                    self.selected.add(countingSchemesModel.flattenedSchemes.map(item => item.id));
-                    updateTableData();
                     self.isLoading(false);
+                    setTimeout(() => {
+                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                        self.selected.add(initialSelection);
+                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                    }, 1);
                 });
             })
             .catch(error => {
@@ -40,25 +52,23 @@ define([
                 self.isLoading(false);
             });
 
+        // Tree selection handler
         self.selectedChanged = function (event) {
-            let selectedKeysArray = [...event.detail.value.values()];
-            updateTableData();
+            const selectedKeys = [...event.detail.value.values()];
+            self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        self.selected = new KeySet.ObservableKeySet();
-
-        function updateTableData() {
-            let selectedKeysArray = countingSchemesModel.getSelectedWithParents([...self.selected().values()]);
-            if (selectedKeysArray.length === 0) {
-                self.schemeArray([]);
-                self.tableColumns([]);
-                self.schemesDataProvider(new ArrayDataProvider([]));
-                return;
+        // Create display data for table
+        self.createDisplayData = function (selectedSchemes) {
+            if (selectedSchemes.length === 0) {
+                return [];
             }
-            let selectedSchemes = countingSchemesModel.flattenedSchemes.filter(node => selectedKeysArray.includes(node.id));
-            let singleRow = {};
+
+            // Create a single row with all selected schemes
+            const singleRow = {};
+
             selectedSchemes.forEach(node => {
-                let schemeData = self.fullSchemeArray().find(s => s.schemeId === node.id);
+                const schemeData = self.apiData().find(s => s.schemeId === node.id);
                 if (schemeData) {
                     singleRow[node.title] = schemeData.minCount === schemeData.maxCount ?
                         schemeData.minCount : `${schemeData.minCount} - ${schemeData.maxCount}`;
@@ -66,30 +76,57 @@ define([
                     singleRow[node.title] = "N/A";
                 }
             });
-            self.schemeArray([singleRow]);
-            self.schemesDataProvider(new ArrayDataProvider(self.schemeArray));
-            let columns = selectedSchemes.map(node => ({
+
+            return [singleRow];
+        };
+
+        // Create table columns configuration
+        self.createTableColumns = function (selectedSchemes) {
+            return selectedSchemes.map(node => ({
                 headerText: node.title,
                 field: node.title,
                 sortable: "disabled",
                 className: "schemeColumn",
                 headerClassName: "schemeColumnHeader"
             }));
+        };
+
+        // Filter and update table data
+        self.filterData = function (selectedKeys) {
+            if (selectedKeys.length === 0) {
+                self.schemeArray([]);
+                self.tableColumns([]);
+                self.schemesDataProvider(new ArrayDataProvider([]));
+                return;
+            }
+
+            // Get selected scheme nodes
+            const selectedSchemes = countingSchemesModel.flattenedSchemes.filter(
+                node => selectedKeys.includes(node.id)
+            );
+
+            // Create display data and columns
+            const displayData = self.createDisplayData(selectedSchemes);
+            const columns = self.createTableColumns(selectedSchemes);
+
+            // Update observables
             self.tableColumns(columns);
-        }
+            self.schemeArray(displayData);
+            self.schemesDataProvider(new ArrayDataProvider(displayData));
+        };
 
-        // Export configuration 
+        // Export functionality
         self.exportTableData = function (event) {
-            // Use the data from the initial fetch call
-            const data = ko.toJS(self.fullSchemeArray());
-
-            // Customize the data
-            const exportData = data.map(scheme => {
+            const exportData = ko.toJS(self.apiData()).map(scheme => {
                 return {
                     ...scheme,
-                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? self.schemeMap[scheme.parentSchemeId] : "N/A",
-                    schemeId: undefined, // Remove schemeId
-                    parentSchemeId: undefined // Remove parentSchemeId
+                    schemeName: scheme.schemeName,
+                    minCount: scheme.minCount,
+                    maxCount: scheme.maxCount,
+                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ?
+                        self.schemeMap[scheme.parentSchemeId] : "N/A",
+                    schemeId: undefined,
+                    parentSchemeId: undefined
                 };
             });
 

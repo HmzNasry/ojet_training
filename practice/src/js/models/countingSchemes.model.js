@@ -5,28 +5,37 @@ define([
 ], function (ko, ArrayTreeDataProvider, surahNames) {
 
     function CountingSchemesModel() {
-        let self = this;
+        const self = this;
 
+        // Model state properties
         self.schemeMap = {};
         self.treeDataProvider = ko.observable();
         self.flattenedSchemes = [];
         self.parentChildMap = {};
 
-        // Fetch API data and build schemeMap for stats schemes
+        // Initialize scheme data from API
         self.fetchSchemeStats = function () {
             return fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API responded with status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    // Build scheme map for name lookups
                     data.forEach(scheme => {
                         self.schemeMap[scheme.schemeId] = scheme.schemeName;
                     });
 
-                    let treeDataStats = self.buildTreeData(data);
+                    // Create tree structure and provider
+                    const treeDataStats = self.buildTreeData(data);
                     self.treeDataProvider(new ArrayTreeDataProvider(treeDataStats, {
                         keyAttributes: "schemeId",
                         childrenAttribute: "children"
                     }));
 
+                    // Generate supporting data structures
                     self.flattenedSchemes = self.flattenTreeDFS(treeDataStats);
                     self.buildParentChildMap();
                 })
@@ -35,14 +44,14 @@ define([
                 });
         };
 
-        // Tree structure definition
+        // Build hierarchical tree structure from flat data
         self.buildTreeData = function (data) {
-            let map = {};
+            const map = {};
             data.forEach(item => {
                 map[item.schemeId] = { ...item, title: item.schemeName };
             });
 
-            let roots = [];
+            const roots = [];
             data.forEach(item => {
                 if (item.parentSchemeId === null || item.parentSchemeId === undefined) {
                     roots.push(map[item.schemeId]);
@@ -57,7 +66,7 @@ define([
             return roots;
         };
 
-        // Flatten tree using DFS
+        // Flatten tree using depth-first search
         self.flattenTreeDFS = function (nodes, parentId = null, parentTitle = null) {
             let result = [];
             nodes.forEach(node => {
@@ -69,7 +78,7 @@ define([
             return result;
         };
 
-        // Build parent-child map
+        // Build mapping of parent schemes to their children
         self.buildParentChildMap = function () {
             self.parentChildMap = {};
             self.flattenedSchemes.forEach(node => {
@@ -82,6 +91,7 @@ define([
             });
         };
 
+        // Get surah name from surah ID
         self.getSurahName = function (surahId) {
             try {
                 const surahData = JSON.parse(surahNames);
@@ -92,14 +102,16 @@ define([
             }
         };
 
-        // Get scheme name by ID
+        // Get scheme name from scheme ID
         self.getSchemeName = function (schemeId) {
             return self.schemeMap[schemeId] || "Unknown";
         };
 
-        // Get selected keys with parents
+        // Get selected keys with their parents and children
         self.getSelectedWithParents = function (selectedKeys) {
-            let allSelected = new Set(selectedKeys);
+            const allSelected = new Set(selectedKeys);
+            
+            // Add all parents of selected nodes
             selectedKeys.forEach(key => {
                 let parent = self.flattenedSchemes.find(node => node.id === key)?.parentId;
                 while (parent !== null) {
@@ -107,15 +119,18 @@ define([
                     parent = self.flattenedSchemes.find(node => node.id === parent)?.parentId || null;
                 }
             });
+            
+            // Add all children of selected nodes
             selectedKeys.forEach(key => {
                 if (self.parentChildMap[key]) {
                     self.parentChildMap[key].forEach(childId => allSelected.add(childId));
                 }
             });
+            
             return Array.from(allSelected);
         };
 
-        // Export helper
+        // Export data to JSON file
         self.exportJSON = function (data, filename = "data.json") {
             try {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

@@ -14,7 +14,7 @@ define([
         const self = this;
 
         // Observable properties
-        self.fullSurahArray = ko.observable({});
+        self.apiData = ko.observable({});
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
@@ -22,17 +22,24 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Initial data fetch
+        // Initialize data
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                self.fullSurahArray(data);
+                self.apiData(data);
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
-                    const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                    self.selected.add(initialSelection);
-                    self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
                     self.isLoading(false);
+                    setTimeout(() => {
+                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                        self.selected.add(initialSelection);
+                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                    }, 1);
                 });
             })
             .catch(error => {
@@ -40,15 +47,15 @@ define([
                 self.isLoading(false);
             });
 
-        // Event handlers
+        // Tree selection handler
         self.selectedChanged = function (event) {
             const selectedKeys = [...event.detail.value.values()];
             self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        // Core filtering logic
-        self.filterData = function (selectedKeys) {
-            const filteredData = Object.entries(self.fullSurahArray())
+        // Data transformation for display
+        self.createDisplayData = function (selectedKeys) {
+            return Object.entries(self.apiData())
                 .map(([surahId, schemes]) => {
                     const surahSchemes = schemes.filter(scheme =>
                         selectedKeys.includes(scheme.schemeId)
@@ -71,9 +78,11 @@ define([
                     return row;
                 })
                 .filter(Boolean);
+        };
 
-            // Generate columns based on selected scheme IDs in DFS order
-            const columns = [{
+        // Table column configuration
+        self.createTableColumns = function (selectedKeys) {
+            const baseColumns = [{
                 headerText: "Surah",
                 field: "surahId",
                 sortable: "enabled",
@@ -81,11 +90,12 @@ define([
                 headerClassName: "surahColumnHeader"
             }];
 
+            const schemeColumns = [];
             countingSchemesModel.flattenedSchemes.forEach(scheme => {
                 if (selectedKeys.includes(scheme.id)) {
                     const schemeName = countingSchemesModel.getSchemeName(scheme.id);
                     if (schemeName) {
-                        columns.push({
+                        schemeColumns.push({
                             headerText: schemeName,
                             field: schemeName,
                             sortable: "enabled",
@@ -96,17 +106,32 @@ define([
                 }
             });
 
+            return [...baseColumns, ...schemeColumns];
+        };
+
+        // Filter and update table data
+        self.filterData = function (selectedKeys) {
+            if (selectedKeys.length === 0) {
+                self.surahArray([]);
+                self.tableColumns([]);
+                self.schemesDataProvider(new ArrayDataProvider([]));
+                return;
+            }
+
+            const displayData = self.createDisplayData(selectedKeys);
+            const columns = self.createTableColumns(selectedKeys);
+
             // Update observables
             self.tableColumns(columns);
-            self.surahArray(filteredData);
-            self.schemesDataProvider(new ArrayDataProvider(filteredData, {
+            self.surahArray(displayData);
+            self.schemesDataProvider(new ArrayDataProvider(displayData, {
                 keyAttributes: "surahId"
             }));
         };
 
         // Export functionality
         self.exportTableData = function () {
-            const rawData = self.fullSurahArray();
+            const rawData = self.apiData();
             const exportReady = {};
 
             // Process each surah

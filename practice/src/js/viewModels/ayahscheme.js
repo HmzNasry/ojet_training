@@ -29,10 +29,12 @@ define([
                 self.apiData(data);
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
-                    const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                    self.selected.add(initialSelection);
-                    self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
                     self.isLoading(false);
+                    setTimeout(() => {
+                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                        self.selected.add(initialSelection);
+                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                    }, 1);
                 });
             })
             .catch(error => {
@@ -73,7 +75,7 @@ define([
         // Table column configuration
         self.createTableColumns = function (selectedKeys) {
             const baseColumns = [
-                { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn"},
+                { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn" },
                 { headerText: "Ayah No", field: "ayahNoWithinSurah", sortable: "enabled", className: "centered" },
                 { headerText: "Ayah Text", field: "ayahText", className: "ayah-text-column right-align" },
                 { headerText: "Ayah Serial No", field: "ayahSerialNo", className: "centered" }
@@ -135,6 +137,7 @@ define([
             }
         };
 
+
         // Export functionality
         self.exportTableData = function (event) {
             const exportData = self.apiData().map(entry => {
@@ -143,7 +146,7 @@ define([
                     surahNo: `${countingSchemesModel.getSurahName(entry.surahNo)}, ${entry.surahNo}`,
                     schemesThatCount: entry.schemesThatCount.map(id => countingSchemesModel.getSchemeName(id)),
                     schemesThatDoNotCount: entry.schemesThatDoNotCount.map(id => countingSchemesModel.getSchemeName(id)),
-                    schemesThatHaveKhulf: entry.schemesThatHaveKhulf ? 
+                    schemesThatHaveKhulf: entry.schemesThatHaveKhulf ?
                         entry.schemesThatHaveKhulf.map(id => countingSchemesModel.getSchemeName(id)) : []
                 };
             });
