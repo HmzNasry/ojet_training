@@ -73,7 +73,7 @@ define([
                 selectedKeys.forEach(schemeId => {
                     const schemeName = countingSchemesModel.getSchemeName(schemeId);
                     if (schemeName) {
-                        row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" : "Doesn't Count";
+                        row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" : entry.schemesThatHaveKhulf.includes(schemeId) ? "Has Khulf" : "Doesn't Count";
                     }
                 });
 
