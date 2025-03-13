@@ -3,16 +3,20 @@ define([
     "models/countingSchemes.model",
     "ojs/ojbootstrap",
     "ojs/ojarraydataprovider",
+    "ojs/ojarraytreedataprovider",
     "ojs/ojknockout-keyset",
     "ojs/ojtreeview",
     "ojs/ojtable",
-    "ojs/ojselectsingle"
-], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, KeySet) {
+    "ojs/ojselectsingle",
+    "text!configuration/navigationData.json"
+], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet, navData) {
 
     function SurahSchemesViewModel() {
-        let self = this;
+        const self = this;
 
-        self.fullSurahArray = ko.observableArray([]);
+        // Observable properties
+        self.fullSurahArray = ko.observable({});
+        self.schemeMap = countingSchemesModel.schemeMap;
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
@@ -20,91 +24,96 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Fetch API data for tables and export
+        // Export functionality
+        self.exportValue = ko.observable(null);
+        self.exportOptions = [{ label: "Export as JSON", value: "json" }];
+        self.exportTableData = function(event) {
+            const data = ko.toJS(self.surahArray());
+            countingSchemesModel.exportJSON(data, "surah_schemes.json");
+            self.exportValue(null);
+        };
+
+        // Initial data fetch
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
             .then(response => response.json())
             .then(data => {
                 self.fullSurahArray(data);
+                
+                // Build scheme map
+                Object.values(data).flat().forEach(scheme => {
+                    self.schemeMap[scheme.schemeId] = scheme.schemeName;
+                });
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
                     const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
                     self.selected.add(initialSelection);
-                    updateTableData();
+                    self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
                     self.isLoading(false);
                 });
             })
             .catch(error => {
-                console.error("Error fetching surah scheme data:", error);
+                console.error("Error fetching data:", error);
                 self.isLoading(false);
             });
 
-        self.selectedChanged = function (event) {
-            updateTableData();
+        // Event handlers
+        self.selectedChanged = function(event) {
+            const selectedKeys = [...event.detail.value.values()];
+            self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        function updateTableData() {
-            let selectedKeysArray = [...self.selected().values()];
-            let selectedSchemesData = getSelectedSchemesData(selectedKeysArray, self.fullSurahArray());
-            let schemeArray = [];
-            let columns = [{
+        // Core filtering logic
+        self.filterData = function(selectedKeys) {
+            const filteredData = Object.entries(self.fullSurahArray())
+                .map(([surahId, schemes]) => {
+                    const surahSchemes = schemes.filter(scheme => 
+                        selectedKeys.includes(scheme.schemeId)
+                    );
+
+                    if (surahSchemes.length === 0) return null;
+
+                    const row = {
+                        surahId: `${surahId} (${countingSchemesModel.getSurahName(surahId)})`
+                    };
+
+                    // Use scheme IDs as keys to prevent name collisions
+                    surahSchemes.forEach(scheme => {
+                        row[`scheme_${scheme.schemeId}`] = 
+                            scheme.minCount !== scheme.maxCount 
+                                ? `${scheme.minCount} - ${scheme.maxCount}` 
+                                : scheme.maxCount;
+                    });
+
+                    return row;
+                })
+                .filter(Boolean);
+
+            // Generate columns based on selected scheme IDs
+            const columns = [{
                 headerText: "Surah",
                 field: "surahId",
                 sortable: "enabled"
             }];
 
-            selectedSchemesData.forEach(scheme => {
-                columns.push({
-                    headerText: scheme.title,
-                    field: `scheme_${scheme.id}`,
-                    sortable: "enabled",
-                    className: "schemeColumn"
-                });
-
-                scheme.data.forEach(data => {
-                    let row = schemeArray.find(r => r.surahId === data.surahId);
-                    if (!row) {
-                        row = { surahId: data.surahId };
-                        schemeArray.push(row);
-                    }
-                    row[`scheme_${data.schemeId}`] = data.value;
-                });
+            selectedKeys.forEach(schemeId => {
+                const schemeName = self.schemeMap[schemeId];
+                if (schemeName) {
+                    columns.push({
+                        headerText: schemeName,
+                        field: `scheme_${schemeId}`,
+                        sortable: "enabled"
+                    });
+                }
             });
 
-            self.surahArray(schemeArray);
+            // Update observables
             self.tableColumns(columns);
-            self.schemesDataProvider(new ArrayDataProvider(self.surahArray));
-        }
-
-        function getSelectedSchemesData(selectedKeys, fullSurahArray) {
-            let selectedSchemes = countingSchemesModel.flattenedSchemes.filter(scheme => selectedKeys.includes(scheme.id));
-            return selectedSchemes.map(scheme => {
-                let data = fullSurahArray().map(surah => {
-                    return {
-                        surahId: surah.surahId,
-                        schemeId: scheme.id,
-                        value: surah[`scheme_${scheme.id}`] || 0
-                    };
-                });
-                return { ...scheme, data };
-            });
-        }
-
-        // Export configuration 
-        self.exportTableData = function (event) {
-            const data = ko.toJS(self.fullSurahArray());
-
-            const exportData = data.map(scheme => {
-                return {
-                    ...scheme,
-                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? countingSchemesModel.getSchemeName(scheme.parentSchemeId) : "N/A",
-                    schemeId: undefined,
-                    parentSchemeId: undefined
-                };
-            });
-
-            countingSchemesModel.exportJSON(exportData, "surah_schemes.json");
+            self.surahArray(filteredData);
+            self.schemesDataProvider(new ArrayDataProvider(filteredData, {
+                keyAttributes: "surahId"
+            }));
         };
     }
 
-    return SurahSchemesViewModel;
+    return SurahSchemesViewModel();
 });

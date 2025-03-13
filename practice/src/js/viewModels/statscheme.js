@@ -13,22 +13,24 @@ define([
         let self = this;
 
         self.fullSchemeArray = ko.observableArray([]);
+        self.schemeMap = countingSchemesModel.schemeMap;
         self.schemeArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
         self.isLoading = ko.observable(true);
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
-        self.selected = new KeySet.ObservableKeySet();
 
         // Fetch API data for tables and export
         fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStats/")
             .then(response => response.json())
             .then(data => {
                 self.fullSchemeArray(data);
+                data.forEach(scheme => {
+                    self.schemeMap[scheme.schemeId] = scheme.schemeName;
+                });
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
-                    const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                    self.selected.add(initialSelection);
+                    self.selected.add(countingSchemesModel.flattenedSchemes.map(item => item.id));
                     updateTableData();
                     self.isLoading(false);
                 });
@@ -39,15 +41,40 @@ define([
             });
 
         self.selectedChanged = function (event) {
+            let selectedKeysArray = [...event.detail.value.values()];
             updateTableData();
         };
 
+        self.selected = new KeySet.ObservableKeySet();
+
         function updateTableData() {
-            let selectedKeysArray = [...self.selected().values()];
-            let { schemeArray, columns } = countingSchemesModel.updateTableData(selectedKeysArray, self.fullSchemeArray());
-            self.schemeArray(schemeArray);
-            self.tableColumns(columns);
+            let selectedKeysArray = countingSchemesModel.getSelectedWithParents([...self.selected().values()]);
+            if (selectedKeysArray.length === 0) {
+                self.schemeArray([]);
+                self.tableColumns([]);
+                self.schemesDataProvider(new ArrayDataProvider([]));
+                return;
+            }
+            let selectedSchemes = countingSchemesModel.flattenedSchemes.filter(node => selectedKeysArray.includes(node.id));
+            let singleRow = {};
+            selectedSchemes.forEach(node => {
+                let schemeData = self.fullSchemeArray().find(s => s.schemeId === node.id);
+                if (schemeData) {
+                    singleRow[node.title] = schemeData.minCount === schemeData.maxCount ?
+                        schemeData.minCount : `${schemeData.minCount} - ${schemeData.maxCount}`;
+                } else {
+                    singleRow[node.title] = "N/A";
+                }
+            });
+            self.schemeArray([singleRow]);
             self.schemesDataProvider(new ArrayDataProvider(self.schemeArray));
+            let columns = selectedSchemes.map(node => ({
+                headerText: node.title,
+                field: node.title,
+                sortable: "enabled",
+                className: "schemeColumn"
+            }));
+            self.tableColumns(columns);
         }
 
         // Export configuration 
@@ -59,7 +86,7 @@ define([
             const exportData = data.map(scheme => {
                 return {
                     ...scheme,
-                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? countingSchemesModel.getSchemeName(scheme.parentSchemeId) : "N/A",
+                    parentSchemeName: (scheme.parentSchemeId !== undefined && scheme.parentSchemeId >= 0) ? self.schemeMap[scheme.parentSchemeId] : "N/A",
                     schemeId: undefined, // Remove schemeId
                     parentSchemeId: undefined // Remove parentSchemeId
                 };
@@ -69,5 +96,5 @@ define([
         };
     }
 
-    return StatsSchemesViewModel;
+    return StatsSchemesViewModel();
 });
