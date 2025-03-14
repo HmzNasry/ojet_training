@@ -28,7 +28,6 @@ define([
             const cachedData = sessionStorage.getItem('ayah_schemes_data');
 
             if (cachedData) {
-                console.log("Using cached ayah data");
                 const data = JSON.parse(cachedData);
                 self.apiData(data);
 
@@ -44,12 +43,9 @@ define([
             }
 
             // API fetching configuration
-
-            console.log("Fetching fresh ayah data");
             fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Caching ayah data");
                     sessionStorage.setItem('ayah_schemes_data', JSON.stringify(data));
 
                     self.apiData(data);
