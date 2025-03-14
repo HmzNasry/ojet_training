@@ -21,7 +21,6 @@ define([
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Cache configuration
         self.loadAyahData = function () {
             self.isLoading(true);
 
@@ -33,11 +32,29 @@ define([
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
                     self.isLoading(false);
-                    setTimeout(() => {
-                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                        self.selected.add(initialSelection);
-                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                    }, 1);
+
+
+                    setTimeout(() => {   // Mandatory in order to suppress the error: Cannot read properties of undefined (reading 'parentKeyNodeMap')
+                        try {
+                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+
+                            // First ensure the tree data provider is ready
+                            if (self.treeDataProvider() && self.treeDataProvider().data) {
+                                self.selected.add(initialSelection);
+                                self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                            } else {
+                                // If tree not ready, wait a bit longer
+                                setTimeout(() => {
+                                    self.selected.add(initialSelection);
+                                    self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                                }, 10);
+                            }
+                        } catch (e) {
+                            console.error("Error during TreeView initialization:", e);
+                            // Fallback - just load data without selection
+                            self.filterData([]);
+                        }
+                    }, 1); 
                 });
                 return;
             }
@@ -129,20 +146,26 @@ define([
         // Filter and update table data
         self.filterData = function (selectedKeys) {
             if (selectedKeys.length === 0) {
-                self.ayahArray([]);
-                self.tableColumns([]);
-                self.ayahDataProvider(new ArrayDataProvider([]));
+                // Use transaction for empty data case
+                ko.computedContext.ignore(function () {
+                    self.ayahArray([]);
+                    self.tableColumns([]);
+                    self.ayahDataProvider(new ArrayDataProvider([]));
+                });
                 return;
             }
 
             const displayData = self.createDisplayData(selectedKeys);
             const columns = self.createTableColumns(selectedKeys);
 
-            self.tableColumns(columns);
-            self.ayahArray(displayData);
-            self.ayahDataProvider(new ArrayDataProvider(displayData, {
-                keyAttributes: "seqNo"
-            }));
+            // Batch all updates in a single transaction
+            ko.computedContext.ignore(function () {
+                self.tableColumns(columns);
+                self.ayahArray(displayData);
+                self.ayahDataProvider(new ArrayDataProvider(displayData, {
+                    keyAttributes: "seqNo"
+                }));
+            });
         };
 
         // Row click navigation

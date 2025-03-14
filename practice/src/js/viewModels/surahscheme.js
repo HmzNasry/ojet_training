@@ -28,22 +28,28 @@ define([
             const cachedData = sessionStorage.getItem('surah_schemes_data');
 
             if (cachedData) {
+                console.log("Using cached surah data");
                 const data = JSON.parse(cachedData);
                 self.apiData(data);
 
                 countingSchemesModel.fetchSchemeStats().then(() => {
                     self.isLoading(false);
                     setTimeout(() => {
-                        const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                        self.selected.add(initialSelection);
-                        self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                    }, 1);
+                        try {
+                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                            self.selected.add(initialSelection);
+                            self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                        } catch (e) {
+                            console.error("Error during TreeView initialization:", e);
+                            self.filterData([]);
+                        }
+                    }, 10);
                 });
                 return;
             }
 
             // API fetch configuration
-
+            console.log("Fetching fresh surah data");
             fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
                 .then(response => {
                     if (!response.ok) {
@@ -52,6 +58,7 @@ define([
                     return response.json();
                 })
                 .then(data => {
+                    console.log("Caching surah data");
                     sessionStorage.setItem('surah_schemes_data', JSON.stringify(data));
 
                     self.apiData(data);
@@ -59,10 +66,15 @@ define([
                     countingSchemesModel.fetchSchemeStats().then(() => {
                         self.isLoading(false);
                         setTimeout(() => {
-                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                            self.selected.add(initialSelection);
-                            self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                        }, 1);
+                            try {
+                                const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                                self.selected.add(initialSelection);
+                                self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
+                            } catch (e) {
+                                console.error("Error during TreeView initialization:", e);
+                                self.filterData([]);
+                            }
+                        }, 10);
                     });
                 })
                 .catch(error => {
@@ -138,20 +150,26 @@ define([
         // Filter and update table data
         self.filterData = function (selectedKeys) {
             if (selectedKeys.length === 0) {
-                self.surahArray([]);
-                self.tableColumns([]);
-                self.schemesDataProvider(new ArrayDataProvider([]));
+                // Use transaction for empty data case
+                ko.computedContext.ignore(function () {
+                    self.surahArray([]);
+                    self.tableColumns([]);
+                    self.schemesDataProvider(new ArrayDataProvider([]));
+                });
                 return;
             }
 
             const displayData = self.createDisplayData(selectedKeys);
             const columns = self.createTableColumns(selectedKeys);
 
-            self.tableColumns(columns);
-            self.surahArray(displayData);
-            self.schemesDataProvider(new ArrayDataProvider(displayData, {
-                keyAttributes: "surahId"
-            }));
+            // Batch all updates in a single transaction
+            ko.computedContext.ignore(function () {
+                self.tableColumns(columns);
+                self.surahArray(displayData);
+                self.schemesDataProvider(new ArrayDataProvider(displayData, {
+                    keyAttributes: "surahId"
+                }));
+            });
         };
 
         // Export configuration
