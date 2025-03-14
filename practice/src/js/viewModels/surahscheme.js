@@ -151,7 +151,7 @@ define([
         self.filterData = function (selectedKeys) {
             if (selectedKeys.length === 0) {
                 // Use transaction for empty data case
-                ko.computedContext.ignore(function () {
+                ko.computedContext.ignore(function() {
                     self.surahArray([]);
                     self.tableColumns([]);
                     self.schemesDataProvider(new ArrayDataProvider([]));
@@ -163,7 +163,7 @@ define([
             const columns = self.createTableColumns(selectedKeys);
 
             // Batch all updates in a single transaction
-            ko.computedContext.ignore(function () {
+            ko.computedContext.ignore(function() {
                 self.tableColumns(columns);
                 self.surahArray(displayData);
                 self.schemesDataProvider(new ArrayDataProvider(displayData, {
