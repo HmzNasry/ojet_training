@@ -1,6 +1,7 @@
 define([
     "knockout",
     "models/countingSchemes.model",
+    "models/surahscheme.model",
     "ojs/ojbootstrap",
     "ojs/ojarraydataprovider",
     "ojs/ojarraytreedataprovider",
@@ -8,117 +9,80 @@ define([
     "ojs/ojtreeview",
     "ojs/ojtable",
     "ojs/ojselectsingle"
-], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet) {
+], function (ko, countingSchemesModel, surahSchemeModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet) {
 
+    /**
+     * Surah Schemes ViewModel
+     * Provides UI logic for displaying counting schemes per surah
+     */
     function SurahSchemesViewModel() {
         const self = this;
 
-        self.apiData = ko.observable({});
+        // ViewModel state observables
         self.surahArray = ko.observableArray([]);
         self.schemesDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
-        self.isLoading = ko.observable(true);
+        self.isLoading = ko.computed(() => countingSchemesModel.isFetchingSurahData() || surahSchemeModel.isLoading());
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        // Load data with sessionStorage caching
-        self.loadSurahData = function () {
-            self.isLoading(true);
-
-            const cachedData = sessionStorage.getItem('surah_schemes_data');
-
-            if (cachedData) {
-                console.log("Using cached surah data");
-                const data = JSON.parse(cachedData);
-                self.apiData(data);
-
-                countingSchemesModel.fetchSchemeStats().then(() => {
-                    self.isLoading(false);
-                    setTimeout(() => {
-                        try {
-                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                            self.selected.add(initialSelection);
-                            self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                        } catch (e) {
-                            console.error("Error during TreeView initialization:", e);
-                            self.filterData([]);
-                        }
-                    }, 10);
-                });
-                return;
-            }
-
-            // API fetch configuration
-            console.log("Fetching fresh surah data");
-            fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerSurah/")
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`API responded with status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Caching surah data");
-                    sessionStorage.setItem('surah_schemes_data', JSON.stringify(data));
-
-                    self.apiData(data);
-
-                    countingSchemesModel.fetchSchemeStats().then(() => {
-                        self.isLoading(false);
-                        setTimeout(() => {
-                            try {
-                                const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                                self.selected.add(initialSelection);
-                                self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                            } catch (e) {
-                                console.error("Error during TreeView initialization:", e);
-                                self.filterData([]);
-                            }
-                        }, 10);
-                    });
-                })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    self.isLoading(false);
-                });
+        /**
+         * Initialize the view
+         */
+        self.initialize = function() {
+            surahSchemeModel.initialize().then(() => {
+                const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                
+                // Use the model helper for TreeView selection with retry mechanism
+                countingSchemesModel.initializeTreeViewSelection(
+                    self.selected,
+                    initialSelection,
+                    keys => self.filterData(keys)
+                );
+            }).catch(error => {
+                console.error("Error initializing view:", error);
+            });
         };
 
-        // Initialize data loading
-        self.loadSurahData();
-
-        // Handle tree selection changes
+        /**
+         * Handle TreeView selection changes
+         * @param {CustomEvent} event - Selection change event
+         */
         self.selectedChanged = function (event) {
             const selectedKeys = [...event.detail.value.values()];
             self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        // Create display data for table
+        /**
+         * Create display data for table based on selected schemes
+         * @param {Array} selectedKeys - Selected scheme IDs
+         * @returns {Array} Data for table display
+         */
         self.createDisplayData = function (selectedKeys) {
-            return Object.entries(self.apiData())
-                .map(([surahId, schemes]) => {
-                    const surahSchemes = schemes.filter(scheme =>
-                        selectedKeys.includes(scheme.schemeId)
-                    );
+            const filteredData = surahSchemeModel.getFilteredSurahSchemes(selectedKeys);
+            
+            return filteredData.map(item => {
+                const row = {
+                    surahId: `${item.surahId} (${item.surahName})`
+                };
 
-                    if (surahSchemes.length === 0) return null;
+                item.schemes.forEach(scheme => {
+                    const schemeName = countingSchemesModel.getSchemeName(scheme.schemeId);
+                    row[schemeName] = scheme.minCount !== scheme.maxCount
+                        ? `${scheme.minCount} - ${scheme.maxCount}`
+                        : scheme.maxCount;
+                });
 
-                    const row = {
-                        surahId: `${surahId} (${countingSchemesModel.getSurahName(surahId)})`
-                    };
-
-                    surahSchemes.forEach(scheme => {
-                        const schemeName = countingSchemesModel.getSchemeName(scheme.schemeId);
-                        row[schemeName] = scheme.minCount !== scheme.maxCount
-                            ? `${scheme.minCount} - ${scheme.maxCount}`
-                            : scheme.maxCount;
-                    });
-
-                    return row;
-                })
-                .filter(Boolean);
+                return row;
+            });
         };
 
-        // Define table columns
+        /**
+         * Define table columns with hierarchical DFS ordering
+         * This ensures parent schemes appear before their children
+         * @param {Array} selectedKeys - Selected scheme IDs
+         * @returns {Array} Column configurations for the table
+         */
         self.createTableColumns = function (selectedKeys) {
             const baseColumns = [{
                 headerText: "Surah",
@@ -129,9 +93,15 @@ define([
             }];
 
             const schemeColumns = [];
-            countingSchemesModel.flattenedSchemes.forEach(scheme => {
-                if (selectedKeys.includes(scheme.id)) {
-                    const schemeName = countingSchemesModel.getSchemeName(scheme.id);
+            const visited = new Set();
+
+            // DFS traversal using parent-child relationships
+            function dfs(nodeId) {
+                if (visited.has(nodeId)) return;
+                visited.add(nodeId);
+
+                if (selectedKeys.includes(nodeId)) {
+                    const schemeName = countingSchemesModel.getSchemeName(nodeId);
                     if (schemeName) {
                         schemeColumns.push({
                             headerText: schemeName,
@@ -142,16 +112,30 @@ define([
                         });
                     }
                 }
-            });
+
+                // Process children in depth-first order
+                const children = countingSchemesModel.parentChildMap[nodeId] || [];
+                children.forEach(childId => dfs(childId));
+            }
+
+            // Find root nodes and start traversal
+            const rootNodes = countingSchemesModel.flattenedSchemes
+                .filter(node => node.parentId === null || node.parentId === undefined)
+                .map(node => node.id);
+
+            rootNodes.forEach(rootId => dfs(rootId));
 
             return [...baseColumns, ...schemeColumns];
         };
 
-        // Filter and update table data
+        /**
+         * Filter and update table data based on selected keys
+         * @param {Array} selectedKeys - Selected scheme IDs
+         */
         self.filterData = function (selectedKeys) {
             if (selectedKeys.length === 0) {
                 // Use transaction for empty data case
-                ko.computedContext.ignore(function() {
+                ko.computedContext.ignore(function () {
                     self.surahArray([]);
                     self.tableColumns([]);
                     self.schemesDataProvider(new ArrayDataProvider([]));
@@ -162,8 +146,8 @@ define([
             const displayData = self.createDisplayData(selectedKeys);
             const columns = self.createTableColumns(selectedKeys);
 
-            // Batch all updates in a single transaction
-            ko.computedContext.ignore(function() {
+            // Batch all updates in a single transaction for better performance
+            ko.computedContext.ignore(function () {
                 self.tableColumns(columns);
                 self.surahArray(displayData);
                 self.schemesDataProvider(new ArrayDataProvider(displayData, {
@@ -172,32 +156,27 @@ define([
             });
         };
 
-        // Export configuration
-        self.exportTableData = function () {
-            const rawData = self.apiData();
-            const exportReady = {};
-
-            Object.keys(rawData).forEach(surahId => {
-                const surahName = countingSchemesModel.getSurahName(surahId);
-                const surahKey = `${surahId} - ${surahName}`;
-
-                exportReady[surahKey] = rawData[surahId].map(scheme => {
-                    let mappedScheme = {
-                        schemeName: scheme.schemeName,
-                        minCount: scheme.minCount,
-                        maxCount: scheme.maxCount
-                    };
-
-                    if (scheme.parentSchemeId !== null && scheme.parentSchemeId !== undefined) {
-                        mappedScheme.parentSchemeName = countingSchemesModel.getSchemeName(scheme.parentSchemeId);
-                    }
-
-                    return mappedScheme;
-                });
-            });
-
-            countingSchemesModel.exportJSON(exportReady, "surah_schemes.json");
+        /**
+         * Export table data to JSON file
+         * @param {Event} event - Click event
+         */
+        self.exportTableData = function (event) {
+            surahSchemeModel.exportData();
         };
+
+        // Subscribe to surah data changes to refresh display if needed
+        countingSchemesModel.surahData.subscribe(function(newSurahData) {
+            // Only refresh if we already have data displayed
+            if (self.schemesDataProvider() && self.schemesDataProvider().data.length > 0) {
+                const currentKeys = [...self.selected.values()];
+                if (currentKeys.length > 0) {
+                    self.filterData(countingSchemesModel.getSelectedWithParents(currentKeys));
+                }
+            }
+        });
+
+        // Initialize the view
+        self.initialize();
     }
 
     return SurahSchemesViewModel();

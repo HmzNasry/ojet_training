@@ -1,6 +1,7 @@
 define([
     "knockout",
     "models/countingSchemes.model",
+    "models/ayahscheme.model",
     "ojs/ojbootstrap",
     "ojs/ojarraydataprovider",
     "ojs/ojarraytreedataprovider",
@@ -8,114 +9,82 @@ define([
     "ojs/ojtreeview",
     "ojs/ojtable",
     "ojs/ojselectsingle"
-], function (ko, countingSchemesModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet) {
+], function (ko, countingSchemesModel, ayahSchemeModel, Bootstrap, ArrayDataProvider, ArrayTreeDataProvider, KeySet) {
 
+    /**
+     * Ayah Schemes ViewModel
+     * Provides UI logic for displaying counting schemes per ayah
+     */
     function AyahSchemesViewModel() {
         const self = this;
 
-        self.apiData = ko.observableArray([]);
+        // ViewModel state observables
         self.ayahArray = ko.observableArray([]);
         self.ayahDataProvider = ko.observable();
         self.tableColumns = ko.observableArray([]);
-        self.isLoading = ko.observable(true);
+        self.isLoading = ko.computed(() => countingSchemesModel.isFetchingSurahData() || ayahSchemeModel.isLoading());
         self.treeDataProvider = countingSchemesModel.treeDataProvider;
         self.selected = new KeySet.ObservableKeySet();
 
-        self.loadAyahData = function () {
-            self.isLoading(true);
-
-            const cachedData = sessionStorage.getItem('ayah_schemes_data');
-
-            if (cachedData) {
-                const data = JSON.parse(cachedData);
-                self.apiData(data);
-
-                countingSchemesModel.fetchSchemeStats().then(() => {
-                    self.isLoading(false);
-
-
-                    setTimeout(() => {   // Mandatory in order to suppress the error: Cannot read properties of undefined (reading 'parentKeyNodeMap')
-                        try {
-                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-
-                            // First ensure the tree data provider is ready
-                            if (self.treeDataProvider() && self.treeDataProvider().data) {
-                                self.selected.add(initialSelection);
-                                self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                            } else {
-                                // If tree not ready, wait a bit longer
-                                setTimeout(() => {
-                                    self.selected.add(initialSelection);
-                                    self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                                }, 10);
-                            }
-                        } catch (e) {
-                            console.error("Error during TreeView initialization:", e);
-                            // Fallback - just load data without selection
-                            self.filterData([]);
-                        }
-                    }, 1); 
-                });
-                return;
-            }
-
-            // API fetching configuration
-            fetch("https://api.hawsabah.org/QRDBAPI/GetCountingSchemeStatsPerAyah/")
-                .then(response => response.json())
-                .then(data => {
-                    sessionStorage.setItem('ayah_schemes_data', JSON.stringify(data));
-
-                    self.apiData(data);
-
-                    countingSchemesModel.fetchSchemeStats().then(() => {
-                        self.isLoading(false);
-                        setTimeout(() => {
-                            const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
-                            self.selected.add(initialSelection);
-                            self.filterData(countingSchemesModel.getSelectedWithParents(initialSelection));
-                        }, 1);
-                    });
-                })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    self.isLoading(false);
-                });
+        /**
+         * Initialize the view
+         */
+        self.initialize = function() {
+            ayahSchemeModel.initialize().then(() => {
+                const initialSelection = countingSchemesModel.flattenedSchemes.map(item => item.id);
+                
+                // Use the model helper for TreeView selection
+                countingSchemesModel.initializeTreeViewSelection(
+                    self.selected,
+                    initialSelection,
+                    keys => self.filterData(keys)
+                );
+            }).catch(error => {
+                console.error("Error initializing view:", error);
+            });
         };
 
-        // Initialize on load
-        self.loadAyahData();
-
-        // Tree selection handler
+        /**
+         * Handle TreeView selection changes
+         * @param {CustomEvent} event - Selection change event
+         */
         self.selectedChanged = function (event) {
             const selectedKeys = [...event.detail.value.values()];
             self.filterData(countingSchemesModel.getSelectedWithParents(selectedKeys));
         };
 
-        // Data transformation for display
+        /**
+         * Create display data for table based on selected schemes
+         * @param {Array} selectedKeys - Selected scheme IDs
+         * @returns {Array} Data for table display
+         */
         self.createDisplayData = function (selectedKeys) {
-            return self.apiData().map(entry => {
+            const filteredData = ayahSchemeModel.getFilteredAyahData(selectedKeys);
+            
+            return filteredData.map(item => {
                 const row = {
-                    seqNo: entry.seqNo,
-                    surahNo: `${entry.surahNo} (${countingSchemesModel.getSurahName(entry.surahNo)})`,
-                    ayahNoWithinSurah: entry.ayahNoWithinSurah,
-                    ayahText: entry.ayah,
-                    ayahSerialNo: entry.ayahSerialNo
+                    seqNo: item.seqNo,
+                    surahNo: `${item.surahNo} (${item.surahName})`,
+                    ayahNoWithinSurah: item.ayahNoWithinSurah,
+                    ayahText: item.ayahText,
+                    ayahSerialNo: item.ayahSerialNo
                 };
 
-                selectedKeys.forEach(schemeId => {
-                    const schemeName = countingSchemesModel.getSchemeName(schemeId);
-                    if (schemeName) {
-                        row[schemeName] = entry.schemesThatCount.includes(schemeId) ? "Counts" :
-                            entry.schemesThatHaveKhulf?.includes(schemeId) ? "Has Khulf" :
-                                "Doesn't Count";
-                    }
+                // Add scheme columns
+                Object.keys(item.schemes).forEach(schemeName => {
+                    row[schemeName] = item.schemes[schemeName];
                 });
 
                 return row;
             });
         };
 
-        // Table column configuration
+        /**
+         * Create table columns with hierarchical DFS ordering
+         * This ensures parent schemes appear before their children
+         * @param {Array} selectedKeys - Selected scheme IDs
+         * @returns {Array} Column configurations for the table
+         */
         self.createTableColumns = function (selectedKeys) {
             const baseColumns = [
                 { headerText: "Surah", field: "surahNo", sortable: "enabled", className: "surahColumn" },
@@ -125,9 +94,15 @@ define([
             ];
 
             const schemeColumns = [];
-            countingSchemesModel.flattenedSchemes.forEach(scheme => {
-                if (selectedKeys.includes(scheme.id)) {
-                    const schemeName = countingSchemesModel.getSchemeName(scheme.id);
+            const visited = new Set();
+
+            // DFS traversal using parent-child relationships
+            function dfs(nodeId) {
+                if (visited.has(nodeId)) return;
+                visited.add(nodeId);
+
+                if (selectedKeys.includes(nodeId)) {
+                    const schemeName = countingSchemesModel.getSchemeName(nodeId);
                     if (schemeName) {
                         schemeColumns.push({
                             headerText: schemeName,
@@ -138,12 +113,26 @@ define([
                         });
                     }
                 }
-            });
+
+                // Process children in depth-first order
+                const children = countingSchemesModel.parentChildMap[nodeId] || [];
+                children.forEach(childId => dfs(childId));
+            }
+
+            // Find root nodes and start traversal
+            const rootNodes = countingSchemesModel.flattenedSchemes
+                .filter(node => node.parentId === null || node.parentId === undefined)
+                .map(node => node.id);
+
+            rootNodes.forEach(rootId => dfs(rootId));
 
             return [...baseColumns, ...schemeColumns];
         };
 
-        // Filter and update table data
+        /**
+         * Filter and update table data based on selected keys
+         * @param {Array} selectedKeys - Selected scheme IDs
+         */
         self.filterData = function (selectedKeys) {
             if (selectedKeys.length === 0) {
                 // Use transaction for empty data case
@@ -158,7 +147,7 @@ define([
             const displayData = self.createDisplayData(selectedKeys);
             const columns = self.createTableColumns(selectedKeys);
 
-            // Batch all updates in a single transaction
+            // Batch all updates in a single transaction for better performance
             ko.computedContext.ignore(function () {
                 self.tableColumns(columns);
                 self.ayahArray(displayData);
@@ -168,39 +157,42 @@ define([
             });
         };
 
-        // Row click navigation
+        /**
+         * Navigate to ayah details when row is clicked
+         * @param {Event} event - Row click event
+         */
         self.handleRowAction = function (event) {
             const rowKey = event.detail.context.key;
-            const entry = self.apiData().find(item => item.seqNo === rowKey);
-
-            if (entry) {
-                const url = new URL('https://hawsabah.org/');
-                url.searchParams.set('ojr', 'dashboard');
-                url.searchParams.set('mushaf', '1');
-                url.searchParams.set('surah', entry.surahNo);
-                url.searchParams.set('ayah', entry.ayahNoWithinSurah);
-
-                window.location.href = url.toString();
+            const url = ayahSchemeModel.getAyahDetailsUrl(rowKey);
+            
+            if (url) {
+                window.location.href = url;
             } else {
                 console.error('No entry found for key:', rowKey);
             }
         };
 
-        // Export functionality
+        /**
+         * Export table data to JSON file
+         * @param {Event} event - Click event
+         */
         self.exportTableData = function (event) {
-            const exportData = self.apiData().map(entry => {
-                return {
-                    ...entry,
-                    surahNo: `${countingSchemesModel.getSurahName(entry.surahNo)}, ${entry.surahNo}`,
-                    schemesThatCount: entry.schemesThatCount.map(id => countingSchemesModel.getSchemeName(id)),
-                    schemesThatDoNotCount: entry.schemesThatDoNotCount.map(id => countingSchemesModel.getSchemeName(id)),
-                    schemesThatHaveKhulf: entry.schemesThatHaveKhulf ?
-                        entry.schemesThatHaveKhulf.map(id => countingSchemesModel.getSchemeName(id)) : []
-                };
-            });
-
-            countingSchemesModel.exportJSON(exportData, "ayah_schemes.json");
+            ayahSchemeModel.exportData();
         };
+
+        // Subscribe to surah data changes to refresh display if needed
+        countingSchemesModel.surahData.subscribe(function(newSurahData) {
+            // Only refresh if we already have data displayed
+            if (self.ayahDataProvider() && self.ayahDataProvider().data.length > 0) {
+                const currentKeys = [...self.selected.values()];
+                if (currentKeys.length > 0) {
+                    self.filterData(countingSchemesModel.getSelectedWithParents(currentKeys));
+                }
+            }
+        });
+
+        // Initialize the view
+        self.initialize();
     }
 
     return AyahSchemesViewModel();
